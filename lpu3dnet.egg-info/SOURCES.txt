@@ -1,0 +1,7 @@
+LICENSE
+README.md
+setup.py
+lpu3dnet.egg-info/PKG-INFO
+lpu3dnet.egg-info/SOURCES.txt
+lpu3dnet.egg-info/dependency_links.txt
+lpu3dnet.egg-info/top_level.txt

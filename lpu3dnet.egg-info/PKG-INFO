@@ -1,0 +1,24 @@
+Metadata-Version: 2.1
+Name: lpu3dnet
+Version: 1.0.0
+Summary: lpu3dnet
+Home-page: UNKNOWN
+Author: Zihan Ren
+Author-email: zihanren.ds@gmail.com
+License: UNKNOWN
+Keywords: python,PyTorch,Pore Network Model
+Platform: UNKNOWN
+Classifier: Development Status :: 1 - Planning
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: Unix
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+
+# LatentPoreUpscale3DNet
+LatentPoreUpscale3DNet is a deep learning architecture that can generate and extrapolate 3D porous media (CT image) conditioning to spatial physical properties distribution (e.g., porosity). With fixed size of 3D training images, this architecture can extrapolate and assemble those generated patches to infinite spatial scale. 
+
+
