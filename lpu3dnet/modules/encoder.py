@@ -38,8 +38,9 @@ class Encoder(nn.Module):
 
 
 # test
-enc = Encoder()
-print( 'The architecture is'+'\n{}'.format(
-    summary(enc,(20,1,64,64,64)) 
-    ))
+if __name__ == "__main__":
+    enc = Encoder()
+    print( 'The architecture is'+'\n{}'.format(
+        summary(enc,(20,1,64,64,64)) 
+        ))
 

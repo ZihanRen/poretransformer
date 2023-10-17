@@ -37,7 +37,8 @@ class Decoder(nn.Module):
 
 
 # test
-enc = Decoder()
-print( 'The architecture is'+'\n{}'.format(
-    summary(enc,(20,256,2,2,2)) 
-    ))
+if __name__ == "__main__":
+    enc = Decoder()
+    print( 'The architecture is'+'\n{}'.format(
+        summary(enc,(20,256,2,2,2)) 
+        ))
