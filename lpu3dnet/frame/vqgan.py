@@ -4,19 +4,16 @@ import torch
 from torch import nn 
 from torchinfo import summary
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-latent_dim = 256
-
 class VQGAN(nn.Module):
-    def __init__(self):
+    def __init__(self,latent_dim=256):
         super(VQGAN, self).__init__()
-        self.encoder = encoder.Encoder().to(device=device)
-        self.decoder = decoder.Decoder().to(device=device)
-        self.codebook = codebook.Codebook().to(device=device)
+        self.encoder = encoder.Encoder()
+        self.decoder = decoder.Decoder()
+        self.codebook = codebook.Codebook()
 
         # conv layer before codebook
-        self.quant_conv = nn.Conv3d(latent_dim, latent_dim, 1).to(device=device)
-        self.post_quant_conv = nn.Conv3d(latent_dim, latent_dim, 1).to(device)
+        self.quant_conv = nn.Conv3d(latent_dim, latent_dim, 1)
+        self.post_quant_conv = nn.Conv3d(latent_dim, latent_dim, 1)
 
     def forward(self, imgs):
         encoded_images = self.encoder(imgs)

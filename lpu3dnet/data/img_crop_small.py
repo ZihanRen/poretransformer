@@ -65,8 +65,8 @@ for i in range(0,6):
 #%% find the optimal image interval for sub-sampling
 
 im_size = 636
-crop_s = 64
-img_interval = 30
+crop_s = 128*3
+img_interval = 15
 
 def output_img_num(im_size,crop_s,img_interval):
     img_num_one_side = ( ((im_size - 1)  - crop_s) / img_interval )

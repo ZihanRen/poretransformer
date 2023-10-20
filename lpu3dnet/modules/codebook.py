@@ -38,7 +38,6 @@ class Codebook(nn.Module):
         z_q = z + (z_q - z).detach()
 
         z_q = z_q.permute(0,4,1,2,3)
-        print(z_q.shape)
 
         return z_q, min_encoding_indices, loss
 
