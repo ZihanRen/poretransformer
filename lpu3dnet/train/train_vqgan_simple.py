@@ -8,8 +8,6 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from lpu3dnet import init_yaml
 import pickle
-import time
-from datetime import timedelta
 
 def save_to_pkl(my_list, file_path):
     """
@@ -32,7 +30,7 @@ epochs = 100 # TODO: change this to a better value
 batch_size = 20 # TODO: change this to a better value
 
 class TrainVQGAN:
-    def __init__(self,device = device, learning_rate=1e-4,beta1=0.9,beta2=0.999,disc_factor=disc_factor):
+    def __init__(self,device = device, learning_rate=5e-4,beta1=0.9,beta2=0.999,disc_factor=disc_factor):
         self.disc_factor = disc_factor
         self.device = device
         self.vqgan = vqgan.VQGAN().to(device=self.device)
@@ -45,13 +43,12 @@ class TrainVQGAN:
 
         self.training_losses = {}
         # it's like the generator loss
-        self.training_losses['q_loss'] = []
+        self.training_losses['vq_loss'] = []
         self.training_losses['rec_loss'] = []
         self.training_losses['d_loss'] = []
         self.training_losses['g_loss'] = []
         self.training_losses['total_loss'] = []
         self.training_losses['total_loss_per_epoch'] = []
-        self.training_losses['time'] = []
         
 
     def configure_optimizers(self):
@@ -88,106 +85,12 @@ class TrainVQGAN:
     def train(self):
 
         print("Training VQGAN:")
-        start_time = time.time()
 
         train_dataset = dataset_vqgan.Dataset_vqgan()
         train_data_loader = DataLoader(train_dataset,batch_size=20,shuffle=True)
         steps_per_epoch = len(train_data_loader)
 
         for epoch in range(epochs):
-            
-
-            trian_loss_per_epoch = 0
-            with tqdm(
-                train_data_loader,
-                total=steps_per_epoch,
-                desc=f"Epoch {epoch + 1}/{epochs}"
-                ) as pbar:
-
-                for i, imgs in enumerate(pbar):
-                    imgs = imgs.to(device=self.device)
-
-                    # get decoded image and embedding loss
-                    decoded_images, _, q_loss = self.vqgan(imgs)
-                    
-                    # get discriminator values
-                    disc_real = self.discriminator(imgs)
-                    disc_fake = self.discriminator(decoded_images)
-
-                    # calculate loss parameter for GAN
-                    disc_factor = self.vqgan.adopt_weight(
-                        self.disc_factor, 
-                        epoch*steps_per_epoch+i, 
-                        threshold=threshold)
-
-                    # reconstruction loss #TODO: check if this is correct
-                    rec_loss = F.mse_loss(imgs,decoded_images)
-
-                    # generator loss
-                    g_loss = (-torch.mean(disc_fake)) * disc_factor
-
-                    # embedding loss + discriminator loss (loss for not fooling discriminator)
-                    vq_loss = + q_loss + rec_loss + g_loss
-
-                    d_loss_real = torch.mean(F.relu(1. - disc_real))
-                    d_loss_fake = torch.mean(F.relu(1. + disc_fake))
-
-                    # discriminator loss - loss for being fooled by generator
-                    gan_loss = disc_factor * 0.5*(d_loss_real + d_loss_fake)
-
-                    
-                    self.opt_vq.zero_grad()
-                    vq_loss.backward(retain_graph=True)
-
-                    self.opt_disc.zero_grad()
-                    gan_loss.backward()
-
-                    self.opt_vq.step()
-                    self.opt_disc.step()
-
-                    # calculate training loss and print out
-                    train_loss = vq_loss + gan_loss
-                    pbar.set_description(f"Step: {i+1}/{steps_per_epoch}")
-                    pbar.set_postfix(Loss=train_loss.item())
-                    trian_loss_per_epoch += train_loss.item()
-
-                    # save losses per step
-                    self.training_losses['q_loss'].append(q_loss.item())
-                    self.training_losses['rec_loss'].append(rec_loss.item())
-                    self.training_losses['d_loss'].append(gan_loss.item())
-                    self.training_losses['g_loss'].append(g_loss.item())
-                    self.training_losses['total_loss'].append(train_loss.item())
-            
-            # save progress per epoch
-            end_time = time.time()
-            duration = timedelta(seconds=end_time-start_time)
-            print(f'Training took {duration} seconds in total for now')
-            self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
-            self.training_losses['time'].append(duration)
-
-            
-
-            model_path = os.path.join(self.PATH,f"vqgan_epoch_{epoch+1}.pth")
-            loss_path = os.path.join(self.PATH,f"training_losses_epoch_{epoch+1}.pkl")
-
-            
-            torch.save(self.vqgan.state_dict(), model_path)
-            save_to_pkl(self.training_losses, loss_path)
-
-
-
-    def train_nogan(self):
-
-        print("Training VQGAN:")
-        start_time = time.time()
-
-        train_dataset = dataset_vqgan.Dataset_vqgan()
-        train_data_loader = DataLoader(train_dataset,batch_size=20,shuffle=True)
-        steps_per_epoch = len(train_data_loader)
-
-        for epoch in range(epochs):
-            
-
             trian_loss_per_epoch = 0
             with tqdm(
                 train_data_loader,
@@ -206,35 +109,33 @@ class TrainVQGAN:
 
                     # embedding loss + discriminator loss (loss for not fooling discriminator)
                     vq_loss = + q_loss + rec_loss
+
+                    
                     self.opt_vq.zero_grad()
                     vq_loss.backward()
+
                     self.opt_vq.step()
 
                     # calculate training loss and print out
                     train_loss = vq_loss
-                    pbar.set_description(f"Epoch {epoch} @ Step: {i+1}/{steps_per_epoch}")
+                    pbar.set_description(f"Step: {i+1}/{steps_per_epoch}")
                     pbar.set_postfix(Loss=train_loss.item())
                     trian_loss_per_epoch += train_loss.item()
 
                     # save losses per step
-                    self.training_losses['q_loss'].append(q_loss.item())
+                    self.training_losses['vq_loss'].append(vq_loss.item())
                     self.training_losses['rec_loss'].append(rec_loss.item())
                     self.training_losses['total_loss'].append(train_loss.item())
             
             # save progress per epoch
-            end_time = time.time()
-            duration = timedelta(seconds=end_time-start_time)
-            print(f'Training took {duration} seconds in total for now')
             self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
-            self.training_losses['time'].append(duration)
-            
+
             model_path = os.path.join(self.PATH,f"vqgan_epoch_{epoch+1}.pth")
             loss_path = os.path.join(self.PATH,f"training_losses_epoch_{epoch+1}.pkl")
+
             
             torch.save(self.vqgan.state_dict(), model_path)
             save_to_pkl(self.training_losses, loss_path)
-
-
 
 if __name__ == "__main__":
     experiment_idx = 1
