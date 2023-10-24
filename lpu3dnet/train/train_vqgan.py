@@ -6,11 +6,16 @@ import os
 from tqdm import tqdm
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
-from lpu3dnet import init_yaml
 import pickle
 import time
 from datetime import timedelta
 from lpu3dnet.init_yaml import config_vqgan as config
+import argparse
+import shutil
+
+parser = argparse.ArgumentParser(description='Experiment setup')
+parser.add_argument("--ex",type=int, required=True, help="set up experiment idx")
+args = parser.parse_args()
 
 
 def save_to_pkl(my_list, file_path):
@@ -37,8 +42,9 @@ class TrainVQGAN:
             beta2=config['train']['beta2'],
             disc_factor=config['train']['disc_factor'],
             threshold=config['train']['disc_start'],
-            experiment_idx = config['experiment'],
+            experiment_idx = args.ex,
             epochs = config['train']['epochs'],
+            w_embed = config['train']['w_embed'],
             ):
         
         self.disc_factor = disc_factor
@@ -52,6 +58,7 @@ class TrainVQGAN:
         self.experiment_idx = experiment_idx
         self.epochs = epochs
         self.threshold = threshold
+        self.w_embed = w_embed
         
         self.opt_vq, self.opt_disc = self.configure_optimizers()
 
@@ -140,7 +147,7 @@ class TrainVQGAN:
                     g_loss = (-torch.mean(disc_fake)) * disc_factor
 
                     # embedding loss + discriminator loss (loss for not fooling discriminator)
-                    vq_loss = + q_loss + rec_loss + g_loss
+                    vq_loss = self.w_embed * q_loss + rec_loss + g_loss
 
                     d_loss_real = torch.mean(F.relu(1. - disc_real))
                     d_loss_fake = torch.mean(F.relu(1. + disc_fake))
@@ -178,8 +185,6 @@ class TrainVQGAN:
             self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
             self.training_losses['time'].append(duration)
 
-            
-
             model_path = os.path.join(self.PATH,f"vqgan_epoch_{epoch+1}.pth")
             loss_path = os.path.join(self.PATH,f"training_losses_epoch_{epoch+1}.pkl")
 
@@ -213,12 +218,12 @@ class TrainVQGAN:
 
                     # get decoded image and embedding loss
                     decoded_images, _, q_loss = self.vqgan(imgs)
+                    q_loss = q_loss or 0
 
                     # reconstruction loss #TODO: check if this is correct
                     rec_loss = F.mse_loss(imgs,decoded_images)
-
-                    # embedding loss + discriminator loss (loss for not fooling discriminator)
-                    vq_loss = + q_loss + rec_loss
+                    vq_loss =  self.w_embed*q_loss + (1-self.w_embed) * rec_loss
+                    
                     self.opt_vq.zero_grad()
                     vq_loss.backward()
                     self.opt_vq.step()
@@ -230,7 +235,9 @@ class TrainVQGAN:
                     trian_loss_per_epoch += train_loss.item()
 
                     # save losses per step
-                    self.training_losses['q_loss'].append(q_loss.item())
+                    if q_loss != 0:
+                        self.training_losses['q_loss'].append((q_loss*self.w_embed).item())
+                    
                     self.training_losses['rec_loss'].append(rec_loss.item())
                     self.training_losses['total_loss'].append(train_loss.item())
             
@@ -250,6 +257,14 @@ class TrainVQGAN:
 
 
 if __name__ == "__main__":
+
     train = TrainVQGAN()
     train.prepare_training()
+    
+    # backup configuration parameters to checkpoint folder
+    shutil.copy(
+        '../lpu_vqgan.yaml',
+        os.path.join(train.PATH,f'lpu_vqgan_{train.experiment_idx}.yaml')
+        )
+    
     train.train_nogan()

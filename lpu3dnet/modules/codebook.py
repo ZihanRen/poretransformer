@@ -9,21 +9,25 @@ class Codebook(nn.Module):
             self,
             num_codebook_vectors=config['architecture']['codebook']['size'],
             latent_dim=config['architecture']['codebook']['latent_dim'],
-            w_zq= config['architecture']['codebook']['w_zq'],
-            w_ec = config['architecture']['codebook']['w_ec']
+            beta_c = config['architecture']['codebook']['beta_c'],
+            autoencoder=config['architecture']['codebook']['autoencoder']
             ):
         
         super(Codebook, self).__init__()
         self.num_codebook_vectors = int(num_codebook_vectors)
         self.latent_dim = latent_dim
-        self.w_zq = w_zq
-        self.w_ec = w_ec
+        self.beta_c = beta_c
+        self.autoencoder = autoencoder
         
         # storage vector embedding layer - this layer is learnable
-        self.embedding = nn.Embedding(self.num_codebook_vectors, self.latent_dim)
-        self.embedding.weight.data.uniform_(-1.0 / self.num_codebook_vectors, 1.0 / self.num_codebook_vectors)
+        if not self.autoencoder:
+            self.embedding = nn.Embedding(self.num_codebook_vectors, self.latent_dim)
+            self.embedding.weight.data.uniform_(-1.0 / self.num_codebook_vectors, 1.0 / self.num_codebook_vectors)
 
     def forward(self, z):
+        if self.autoencoder:
+            return z, None, None
+
         z = z.permute(0,2,3,4,1).contiguous()
         # print(z.shape) 
         z_flattened = z.view(-1, self.latent_dim)
@@ -43,8 +47,8 @@ class Codebook(nn.Module):
 
         # make codebook close to z. Check papers for more details - embedding loss
         # commitment loss
-        loss =  self.w_ec * torch.mean((z_q.detach() - z)**2) + \
-                self.w_zq * torch.mean((z_q - z.detach())**2) 
+        loss =    torch.mean((z_q.detach() - z)**2) + \
+                self.beta_c * torch.mean((z_q - z.detach())**2) 
 
         # gradident trick since k nearest neighbor is not differentiable - consider RL??
         z_q = z + (z_q - z).detach()
@@ -56,6 +60,8 @@ class Codebook(nn.Module):
 
 if __name__ == "__main__":
     cod = Codebook()
-    print( 'The architecture is'+'\n{}'.format(
-        summary(cod,(20,config['architecture']['codebook']['latent_dim'],2,2,2)) 
-        ))
+    # print( 'The architecture is'+'\n{}'.format(
+    #     summary(cod,(20,config['architecture']['codebook']['latent_dim'],2,2,2)) 
+    #     ))
+    num_params = sum(p.numel() for p in cod.parameters() if p.requires_grad)
+    print(f'# of parameters require gradidents: {num_params}')

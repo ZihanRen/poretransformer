@@ -22,5 +22,14 @@
 * check loss function of VQGAN - commitment loss and quantization loss
 * adjust learning rate to be larger
 
+#### Dignostics
+Results are not good and Reconstruction loss is high. Potential diagnostics:
+* weight initialization
+* add dense layer?
+* adjust loss functions
+* balance embedding loss and reconstruction loss
+* remove codebook and train an autoencoder first 
+
+
 ### Experiment 3
-* 
+* autoencoder without codebook

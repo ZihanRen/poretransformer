@@ -1,7 +1,5 @@
 Project: config_vqgan
 
-experiment: 1
-
 architecture:
   encoder:
     img_channels: 1
@@ -14,13 +12,11 @@ architecture:
   
   codebook:
     # codebook size
-    size: 30000
+    size: 600
     # codebook dimension
     latent_dim: 256
     # weight of commitment loss for z_n (embedding)
-    w_zq: 2
-    # weight of commitment loss for z_e (encoder)
-    w_ec: 4
+    beta_c: 0.2
 
   decoder:
     img_channels: 1
@@ -34,7 +30,6 @@ architecture:
     img_channels: 1
     init_filters_num: 64
     num_layers: 3
-
 
 # path of data and checkpoints
 data:
@@ -58,3 +53,4 @@ train:
   beta2: 0.999
   disc_factor: 0.2 # weight of discriminator loss
   disc_start: 1000 # steps before starting discriminator
+  w_embed: 2 # weight of embedding loss
