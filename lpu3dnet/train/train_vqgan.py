@@ -10,6 +10,8 @@ from lpu3dnet import init_yaml
 import pickle
 import time
 from datetime import timedelta
+from lpu3dnet.init_yaml import config_vqgan as config
+
 
 def save_to_pkl(my_list, file_path):
     """
@@ -24,27 +26,56 @@ def save_to_pkl(my_list, file_path):
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-latent_dim = 256
-
-disc_factor = 0.2 # TODO: change this to a better value
-threshold = 1000 # TODO: change this to a better value
-epochs = 100 # TODO: change this to a better value
-batch_size = 20 # TODO: change this to a better value
 
 class TrainVQGAN:
-    def __init__(self,device = device, learning_rate=1e-4,beta1=0.9,beta2=0.999,disc_factor=disc_factor):
+    def __init__(
+            self,
+            device = device,
+            lr_vqgan=config['train']['lr_vqgan'],
+            lr_disc=config['train']['lr_disc'],
+            beta1=config['train']['beta1'],
+            beta2=config['train']['beta2'],
+            disc_factor=config['train']['disc_factor'],
+            threshold=config['train']['disc_start'],
+            experiment_idx = config['experiment'],
+            epochs = config['train']['epochs'],
+            ):
+        
         self.disc_factor = disc_factor
         self.device = device
         self.vqgan = vqgan.VQGAN().to(device=self.device)
         self.discriminator = discriminator.Discriminator().to(device=self.device)
-        self.learning_rate = learning_rate
+        self.lr_vqgan = lr_vqgan
+        self.lr_disc = lr_disc
         self.beta1 = beta1
         self.beta2 = beta2
+        self.experiment_idx = experiment_idx
+        self.epochs = epochs
+        self.threshold = threshold
         
         self.opt_vq, self.opt_disc = self.configure_optimizers()
 
         self.training_losses = {}
-        # it's like the generator loss
+
+        
+
+    def configure_optimizers(self):
+        opt_vq = torch.optim.Adam(
+            list(self.vqgan.encoder.parameters()) +
+            list(self.vqgan.decoder.parameters()) +
+            list(self.vqgan.codebook.parameters()) +
+            list(self.vqgan.quant_conv.parameters()) +
+            list(self.vqgan.post_quant_conv.parameters()),
+            lr=self.lr_vqgan, eps=1e-08, betas=(self.beta1, self.beta2)
+        )
+        opt_disc = torch.optim.Adam(self.discriminator.parameters(),
+                                    lr=self.lr_disc, eps=1e-08, betas=(self.beta1, self.beta2))
+
+        return opt_vq, opt_disc
+
+    def prepare_training(self):
+
+        # initialize object to track training losses
         self.training_losses['q_loss'] = []
         self.training_losses['rec_loss'] = []
         self.training_losses['d_loss'] = []
@@ -52,24 +83,6 @@ class TrainVQGAN:
         self.training_losses['total_loss'] = []
         self.training_losses['total_loss_per_epoch'] = []
         self.training_losses['time'] = []
-        
-
-    def configure_optimizers(self):
-        lr = self.learning_rate
-        opt_vq = torch.optim.Adam(
-            list(self.vqgan.encoder.parameters()) +
-            list(self.vqgan.decoder.parameters()) +
-            list(self.vqgan.codebook.parameters()) +
-            list(self.vqgan.quant_conv.parameters()) +
-            list(self.vqgan.post_quant_conv.parameters()),
-            lr=lr, eps=1e-08, betas=(self.beta1, self.beta2)
-        )
-        opt_disc = torch.optim.Adam(self.discriminator.parameters(),
-                                    lr=lr, eps=1e-08, betas=(self.beta1, self.beta2))
-
-        return opt_vq, opt_disc
-
-    def prepare_training(self,idx):
 
         def remove_all_files_in_directory(directory):
             """Removes all files in the specified directory."""
@@ -79,7 +92,7 @@ class TrainVQGAN:
                     os.remove(file_path)
 
         # initialize training folders
-        self.PATH =  os.path.join( init_yaml.PATH['checkpoints'],f'ex{idx}' )
+        self.PATH =  os.path.join( config['checkpoints']['PATH'],f'ex{self.experiment_idx}' )
         os.makedirs(self.PATH, exist_ok=True)
         # clear all previous files in this folder
         remove_all_files_in_directory(self.PATH)
@@ -91,17 +104,17 @@ class TrainVQGAN:
         start_time = time.time()
 
         train_dataset = dataset_vqgan.Dataset_vqgan()
-        train_data_loader = DataLoader(train_dataset,batch_size=20,shuffle=True)
+        train_data_loader = DataLoader(train_dataset,batch_size=config['train']['epochs'],shuffle=True)
         steps_per_epoch = len(train_data_loader)
 
-        for epoch in range(epochs):
+        for epoch in range(self.epochs):
             
 
             trian_loss_per_epoch = 0
             with tqdm(
                 train_data_loader,
                 total=steps_per_epoch,
-                desc=f"Epoch {epoch + 1}/{epochs}"
+                desc=f"Epoch {epoch + 1}/{self.epochs}"
                 ) as pbar:
 
                 for i, imgs in enumerate(pbar):
@@ -118,7 +131,7 @@ class TrainVQGAN:
                     disc_factor = self.vqgan.adopt_weight(
                         self.disc_factor, 
                         epoch*steps_per_epoch+i, 
-                        threshold=threshold)
+                        threshold=self.threshold)
 
                     # reconstruction loss #TODO: check if this is correct
                     rec_loss = F.mse_loss(imgs,decoded_images)
@@ -185,14 +198,14 @@ class TrainVQGAN:
         train_data_loader = DataLoader(train_dataset,batch_size=20,shuffle=True)
         steps_per_epoch = len(train_data_loader)
 
-        for epoch in range(epochs):
+        for epoch in range(self.epochs):
             
 
             trian_loss_per_epoch = 0
             with tqdm(
                 train_data_loader,
                 total=steps_per_epoch,
-                desc=f"Epoch {epoch + 1}/{epochs}"
+                desc=f"Epoch {epoch + 1}/{self.epochs}"
                 ) as pbar:
 
                 for i, imgs in enumerate(pbar):
@@ -212,7 +225,7 @@ class TrainVQGAN:
 
                     # calculate training loss and print out
                     train_loss = vq_loss
-                    pbar.set_description(f"Epoch {epoch} @ Step: {i+1}/{steps_per_epoch}")
+                    pbar.set_description(f"Epoch {epoch} at Step: {i+1}/{steps_per_epoch}")
                     pbar.set_postfix(Loss=train_loss.item())
                     trian_loss_per_epoch += train_loss.item()
 
@@ -237,7 +250,6 @@ class TrainVQGAN:
 
 
 if __name__ == "__main__":
-    experiment_idx = 1
     train = TrainVQGAN()
-    train.prepare_training(experiment_idx)
-    train.train()
+    train.prepare_training()
+    train.train_nogan()

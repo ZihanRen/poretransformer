@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchinfo import summary
         
 class GroupNorm(nn.Module):
     def __init__(self, channels,num_groups):
@@ -18,7 +17,7 @@ class Swish(nn.Module):
 
 # Resnet block input channel = output channel
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels,num_groups=16):
+    def __init__(self, in_channels, out_channels,num_groups):
         super(ResidualBlock, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels

@@ -1,13 +1,23 @@
 from torch import nn
 import torch
 from torchinfo import summary
+from lpu3dnet.init_yaml import config_vqgan as config
+
 
 class Codebook(nn.Module):
-    def __init__(self, num_codebook_vectors=3000, latent_dim=256, beta=0.5):
+    def __init__(
+            self,
+            num_codebook_vectors=config['architecture']['codebook']['size'],
+            latent_dim=config['architecture']['codebook']['latent_dim'],
+            w_zq= config['architecture']['codebook']['w_zq'],
+            w_ec = config['architecture']['codebook']['w_ec']
+            ):
+        
         super(Codebook, self).__init__()
-        self.num_codebook_vectors = num_codebook_vectors
+        self.num_codebook_vectors = int(num_codebook_vectors)
         self.latent_dim = latent_dim
-        self.beta = beta
+        self.w_zq = w_zq
+        self.w_ec = w_ec
         
         # storage vector embedding layer - this layer is learnable
         self.embedding = nn.Embedding(self.num_codebook_vectors, self.latent_dim)
@@ -32,7 +42,9 @@ class Codebook(nn.Module):
         # print("z_q shape is {}".format(z_q.shape))
 
         # make codebook close to z. Check papers for more details - embedding loss
-        loss = torch.mean((z_q.detach() - z)**2) + self.beta * torch.mean((z_q - z.detach())**2)
+        # commitment loss
+        loss =  self.w_ec * torch.mean((z_q.detach() - z)**2) + \
+                self.w_zq * torch.mean((z_q - z.detach())**2) 
 
         # gradident trick since k nearest neighbor is not differentiable - consider RL??
         z_q = z + (z_q - z).detach()
@@ -45,5 +57,5 @@ class Codebook(nn.Module):
 if __name__ == "__main__":
     cod = Codebook()
     print( 'The architecture is'+'\n{}'.format(
-        summary(cod,(20,256,2,2,2)) 
+        summary(cod,(20,config['architecture']['codebook']['latent_dim'],2,2,2)) 
         ))

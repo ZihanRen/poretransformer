@@ -1,3 +1,4 @@
+#%%
 import torch
 import os
 import numpy as np
@@ -5,12 +6,17 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 from tifffile import imread
 from lpu3dnet import init_yaml
-
+#%%
 class Dataset_vqgan(Dataset):
-  def __init__(self,ct_idx=[2,3,4,5],transform=None):
+  def __init__(
+      self,
+      ct_idx=init_yaml.config_vqgan['data']['ct_idx'],
+      transform=None,
+      root_path = init_yaml.config_vqgan['data']['PATH']['sub_vol']
+      ):
     # ct_idx: subvolumes that are sampled from main volume ct idx
 
-    self.root_PATH = init_yaml.PATH['img_path']['sub_vol']
+    self.root_PATH = root_path
     self.ct_idx = ct_idx
     self.transform = transform
 
@@ -51,13 +57,15 @@ class Dataset_vqgan(Dataset):
   def img_name(self):
     return (os.listdir(self.img_PATH))
 
-  def ct_idx(self):
-      print(self.ct_idx)
+  def print_parameters(self):
+      print("training CT index is {}".format(self.ct_idx))
+      print("training data root path is {}".format(self.root_PATH))
 
 
 if __name__ == "__main__":
 
   data_vqgan = Dataset_vqgan()
+  data_vqgan.print_parameters()
   print("Total number of training data samples is {}".format(len(data_vqgan)))
   train_data_loader = DataLoader(data_vqgan,batch_size=20,shuffle=True)
 

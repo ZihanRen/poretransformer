@@ -1,9 +1,16 @@
 import torch
 from torch import nn
 from torchinfo import summary
+from lpu3dnet.init_yaml import config_vqgan as config
 
 class Discriminator(nn.Module):
-    def __init__(self, image_channels = 1, num_filters_last=64, n_layers=3):
+    def __init__(
+                 self, 
+                 image_channels = config['architecture']['discriminator']['img_channels'],
+                num_filters_last=config['architecture']['discriminator']['init_filters_num'],
+                n_layers=config['architecture']['discriminator']['num_layers']
+                ):
+        
         super(Discriminator, self).__init__()
 
         layers = [nn.Conv3d(image_channels, num_filters_last, 4, 2, 1), nn.LeakyReLU(0.2)]

@@ -1,5 +1,0 @@
-# PATH to load images - tif 
-img_path:
-  main_vol:  "/journel/s0/zur74/data/new_energy_well/train_vol/main_vol"
-  sub_vol:  "/journel/s0/zur74/data/new_energy_well/train_vol/sub_vol"
-checkpoints: "/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/train/checkpoints"
