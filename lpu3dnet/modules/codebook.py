@@ -60,8 +60,6 @@ class Codebook(nn.Module):
 
 if __name__ == "__main__":
     cod = Codebook()
-    # print( 'The architecture is'+'\n{}'.format(
-    #     summary(cod,(20,config['architecture']['codebook']['latent_dim'],2,2,2)) 
-    #     ))
-    num_params = sum(p.numel() for p in cod.parameters() if p.requires_grad)
-    print(f'# of parameters require gradidents: {num_params}')
+    print( 'The architecture is'+'\n{}'.format(
+        summary(cod,(20,config['architecture']['codebook']['latent_dim'],2,2,2)) 
+        ))
