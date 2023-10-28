@@ -25,6 +25,18 @@ Results are not good and Reconstruction loss is high. Potential diagnostics:
 #### Improvement no.2
 * Increase size of codebook (1000->10000)
 
+#### Result
+* It doesn't work
+
+#### Improvement no.3
+* give codebook loss 0.01 weight - damping the effect of updating the codebook
+
+#### Improvement no.4
+* gradually increase weight for codebook as training epochs increase - start with very small weight
+
+#### Improvement no.5
+* Take a new codebook approach - Karpathy gambling
+
 
 
 

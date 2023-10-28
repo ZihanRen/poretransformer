@@ -1,3 +1,4 @@
+
 import torch
 from lpu3dnet.frame import vqgan
 from lpu3dnet.modules import discriminator
@@ -12,6 +13,7 @@ from datetime import timedelta
 from lpu3dnet.init_yaml import config_vqgan as config
 import argparse
 import shutil
+
 
 parser = argparse.ArgumentParser(description='Experiment setup')
 parser.add_argument("--ex",type=int, required=True, help="set up experiment idx")
@@ -45,6 +47,7 @@ class TrainVQGAN:
             experiment_idx = args.ex,
             epochs = config['train']['epochs'],
             w_embed = config['train']['w_embed'],
+            codebook_weight_increase_per_epoch=config['train']['codebook_weight_increase_per_epoch']
             ):
         
         self.disc_factor = disc_factor
@@ -59,6 +62,7 @@ class TrainVQGAN:
         self.epochs = epochs
         self.threshold = threshold
         self.w_embed = w_embed
+        self.codebook_weight_increase_per_epoch = codebook_weight_increase_per_epoch
         
         self.opt_vq, self.opt_disc = self.configure_optimizers()
 
@@ -192,9 +196,8 @@ class TrainVQGAN:
             torch.save(self.vqgan.state_dict(), model_path)
             save_to_pkl(self.training_losses, loss_path)
 
-
-
     def train_nogan(self):
+        
 
         print("Training VQGAN:")
         start_time = time.time()
@@ -202,6 +205,7 @@ class TrainVQGAN:
         train_dataset = dataset_vqgan.Dataset_vqgan()
         train_data_loader = DataLoader(train_dataset,batch_size=20,shuffle=True)
         steps_per_epoch = len(train_data_loader)
+        weight_increase_per_step = self.codebook_weight_increase_per_epoch/steps_per_epoch
 
         for epoch in range(self.epochs):
             
@@ -222,7 +226,12 @@ class TrainVQGAN:
 
                     # reconstruction loss #TODO: check if this is correct
                     rec_loss = F.mse_loss(imgs,decoded_images)
-                    vq_loss =  self.w_embed*q_loss + (1-self.w_embed) * rec_loss
+
+                    # delay the update of codebook at the beginning
+                    weight_q_loss = min(weight_increase_per_step * (epoch*steps_per_epoch+i),1)
+                    q_loss = weight_q_loss * q_loss
+
+                    vq_loss =  q_loss + rec_loss
                     
                     self.opt_vq.zero_grad()
                     vq_loss.backward()
@@ -236,7 +245,7 @@ class TrainVQGAN:
 
                     # save losses per step
                     if q_loss != 0:
-                        self.training_losses['q_loss'].append((q_loss*self.w_embed).item())
+                        self.training_losses['q_loss'].append((q_loss).item())
                     
                     self.training_losses['rec_loss'].append(rec_loss.item())
                     self.training_losses['total_loss'].append(train_loss.item())
