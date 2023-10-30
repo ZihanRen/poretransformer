@@ -93,6 +93,7 @@ class TrainVQGAN:
         self.training_losses['g_loss'] = []
         self.training_losses['total_loss'] = []
         self.training_losses['total_loss_per_epoch'] = []
+        self.training_losses['perplexity'] = []
         self.training_losses['time'] = []
 
         def remove_all_files_in_directory(directory):
@@ -132,7 +133,7 @@ class TrainVQGAN:
                     imgs = imgs.to(device=self.device)
 
                     # get decoded image and embedding loss
-                    decoded_images, _, q_loss = self.vqgan(imgs)
+                    decoded_images, codebook_info, q_loss = self.vqgan(imgs)
                     
                     # get discriminator values
                     disc_real = self.discriminator(imgs)
@@ -209,8 +210,8 @@ class TrainVQGAN:
 
         for epoch in range(self.epochs):
             
-
             trian_loss_per_epoch = 0
+            
             with tqdm(
                 train_data_loader,
                 total=steps_per_epoch,
@@ -221,8 +222,10 @@ class TrainVQGAN:
                     imgs = imgs.to(device=self.device)
 
                     # get decoded image and embedding loss
-                    decoded_images, _, q_loss = self.vqgan(imgs)
-                    q_loss = q_loss or 0
+                    decoded_images, codebook_info, q_loss = self.vqgan(imgs)
+                    perplexity = codebook_info[0]
+
+                    q_loss = q_loss or 0 # if q_loss is None, set it to 0
 
                     # reconstruction loss #TODO: check if this is correct
                     rec_loss = F.mse_loss(imgs,decoded_images)
@@ -243,12 +246,15 @@ class TrainVQGAN:
                     pbar.set_postfix(Loss=train_loss.item())
                     trian_loss_per_epoch += train_loss.item()
 
-                    # save losses per step
-                    if q_loss != 0:
-                        self.training_losses['q_loss'].append((q_loss).item())
+                    # check if tensor
+                    if isinstance(q_loss, torch.Tensor):
+                        self.training_losses['q_loss'].append(q_loss.item())
+                    else:
+                        self.training_losses['q_loss'].append(q_loss)
                     
                     self.training_losses['rec_loss'].append(rec_loss.item())
                     self.training_losses['total_loss'].append(train_loss.item())
+                    self.training_losses['perplexity'].append(perplexity.item())
             
             # save progress per epoch
             end_time = time.time()

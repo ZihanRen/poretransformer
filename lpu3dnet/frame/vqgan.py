@@ -18,17 +18,23 @@ class VQGAN(nn.Module):
     def forward(self, imgs):
         encoded_images = self.encoder(imgs)
         quant_conv_encoded_images = self.quant_conv(encoded_images)
-        codebook_mapping, codebook_indices, q_loss = self.codebook(quant_conv_encoded_images)
+
+        codebook_mapping, q_loss, (perplexity,min_encodings,codebook_indices)  = \
+              self.codebook(quant_conv_encoded_images)
+        
         post_quant_conv_mapping = self.post_quant_conv(codebook_mapping)
         decoded_images = self.decoder(post_quant_conv_mapping)
 
-        return decoded_images, codebook_indices, q_loss
+        return decoded_images, (perplexity,min_encodings,codebook_indices), q_loss
 
     def encode(self, imgs):
         encoded_images = self.encoder(imgs)
         quant_conv_encoded_images = self.quant_conv(encoded_images)
-        codebook_mapping, codebook_indices, q_loss = self.codebook(quant_conv_encoded_images)
-        return codebook_mapping, codebook_indices, q_loss
+
+        codebook_mapping, q_loss, (perplexity,min_encodings,codebook_indices)  = \
+              self.codebook(quant_conv_encoded_images)
+        
+        return codebook_mapping, (perplexity,min_encodings,codebook_indices), q_loss
 
     def decode(self, z):
         post_quant_conv_mapping = self.post_quant_conv(z)

@@ -12,12 +12,13 @@ architecture:
   
   codebook:
     # codebook size
-    size: 10000
+    size: 3000
     # codebook dimension
     latent_dim: 256
     # weight of commitment loss for z_n (embedding)
-    beta_c: 0.2
+    beta_c: 0.1
     autoencoder: false # whether to use autoencoder to replace genereator boolean
+    legacy: false # whether to use legacy codebook boolean
 
   decoder:
     img_channels: 1
@@ -56,5 +57,5 @@ train:
   disc_start: 1000 # steps before starting discriminator
   # consider making w_embed dynamic adjusted by steps
   w_embed: 0.02 # weight of embedding loss weight*q_loss + (1-weight)*rec_loss; >0.5 -- larger weight on q loss
-  codebook_weight_increase_per_epoch: 0.01
+  codebook_weight_increase_per_epoch: 0.05 # increase codebook weight by this amount per epoch until reaching to 1
 
