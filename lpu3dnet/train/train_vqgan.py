@@ -47,7 +47,8 @@ class TrainVQGAN:
             experiment_idx = args.ex,
             epochs = config['train']['epochs'],
             w_embed = config['train']['w_embed'],
-            codebook_weight_increase_per_epoch=config['train']['codebook_weight_increase_per_epoch']
+            codebook_weight_increase_per_epoch=config['train']['codebook_weight_increase_per_epoch'],
+            drop_last = config['train']['drop_last']
             ):
         
         self.disc_factor = disc_factor
@@ -63,6 +64,7 @@ class TrainVQGAN:
         self.threshold = threshold
         self.w_embed = w_embed
         self.codebook_weight_increase_per_epoch = codebook_weight_increase_per_epoch
+        self.drop_last = drop_last
         
         self.opt_vq, self.opt_disc = self.configure_optimizers()
 
@@ -116,7 +118,7 @@ class TrainVQGAN:
         start_time = time.time()
 
         train_dataset = dataset_vqgan.Dataset_vqgan()
-        train_data_loader = DataLoader(train_dataset,batch_size=config['train']['epochs'],shuffle=True)
+        train_data_loader = DataLoader(train_dataset,batch_size=config['train']['epochs'],shuffle=True,drop_last=self.drop_last)
         steps_per_epoch = len(train_data_loader)
 
         for epoch in range(self.epochs):
@@ -204,7 +206,7 @@ class TrainVQGAN:
         start_time = time.time()
 
         train_dataset = dataset_vqgan.Dataset_vqgan()
-        train_data_loader = DataLoader(train_dataset,batch_size=20,shuffle=True)
+        train_data_loader = DataLoader(train_dataset,batch_size=20,shuffle=True,drop_last=True)
         steps_per_epoch = len(train_data_loader)
         weight_increase_per_step = self.codebook_weight_increase_per_epoch/steps_per_epoch
 

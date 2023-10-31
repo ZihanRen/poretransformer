@@ -67,7 +67,7 @@ if __name__ == "__main__":
   data_vqgan = Dataset_vqgan()
   data_vqgan.print_parameters()
   print("Total number of training data samples is {}".format(len(data_vqgan)))
-  train_data_loader = DataLoader(data_vqgan,batch_size=20,shuffle=True)
+  train_data_loader = DataLoader(data_vqgan,batch_size=16,shuffle=True)
 
 
   for i, img in enumerate(train_data_loader):
@@ -77,3 +77,5 @@ if __name__ == "__main__":
     print(f'input img shape is {img.size()}, dtype is {img.dtype}')
     print(2*'\n')
 
+
+# %%
