@@ -16,7 +16,7 @@ architecture:
     # codebook dimension
     latent_dim: 256
     # weight of commitment loss for z_n (embedding)
-    beta_c: 0.1
+    beta_c: 0.3
     autoencoder: false # whether to use autoencoder to replace genereator boolean
     legacy: false # whether to use legacy codebook boolean
 
