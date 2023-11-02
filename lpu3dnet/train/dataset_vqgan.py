@@ -5,24 +5,22 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 from tifffile import imread
-from lpu3dnet import init_yaml
-#%%
+import hydra
+
 class Dataset_vqgan(Dataset):
   def __init__(
       self,
-      ct_idx=init_yaml.config_vqgan['data']['ct_idx'],
-      transform=None,
-      root_path = init_yaml.config_vqgan['data']['PATH']['sub_vol']
+      cfg,
       ):
     # ct_idx: subvolumes that are sampled from main volume ct idx
 
-    self.root_PATH = root_path
-    self.ct_idx = ct_idx
-    self.transform = transform
+    self.root_PATH = cfg.data.PATH.sub_vol
+    self.ct_idx = cfg.data.ct_idx
+    self.transform = None
 
     # get training data PATH
     self.img_PATH = []
-    for idx in ct_idx:
+    for idx in self.ct_idx:
       PATH_folder = os.path.join(self.root_PATH,f'ct_{idx}')
       for img_name in os.listdir(PATH_folder):
         self.img_PATH.append(os.path.join(PATH_folder,img_name))
@@ -63,19 +61,28 @@ class Dataset_vqgan(Dataset):
 
 
 if __name__ == "__main__":
+  experiment_idx = 2
 
-  data_vqgan = Dataset_vqgan()
-  data_vqgan.print_parameters()
-  print("Total number of training data samples is {}".format(len(data_vqgan)))
-  train_data_loader = DataLoader(data_vqgan,batch_size=16,shuffle=True)
+  @hydra.main(
+    config_path=f"/journel/s0/zur74/test/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
+    config_name="vqgan",
+    version_base='1.2')
+  def main(cfg):
 
+    data_vqgan = Dataset_vqgan(cfg)
+    data_vqgan.print_parameters()
 
-  for i, img in enumerate(train_data_loader):
-    if i == 3:
-      break
-    print(f'Batch number:{i}')
-    print(f'input img shape is {img.size()}, dtype is {img.dtype}')
-    print(2*'\n')
+    print("Total number of training data samples is {}".format(len(data_vqgan)))
+    train_data_loader = DataLoader(data_vqgan,batch_size=16,shuffle=True)
+
+    for i, img in enumerate(train_data_loader):
+      if i == 3:
+        break
+      print(f'Batch number:{i}')
+      print(f'input img shape is {img.size()}, dtype is {img.dtype}')
+      print(2*'\n')
+    
+  main()
 
 
 # %%

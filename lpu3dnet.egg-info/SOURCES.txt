@@ -1,6 +1,8 @@
 LICENSE
 README.md
 setup.py
+lpu3dnet/__init__.py
+lpu3dnet/init_yaml.py
 lpu3dnet.egg-info/PKG-INFO
 lpu3dnet.egg-info/SOURCES.txt
 lpu3dnet.egg-info/dependency_links.txt

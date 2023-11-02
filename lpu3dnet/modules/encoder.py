@@ -1,16 +1,15 @@
 import torch.nn as nn
 from torchinfo import summary
-from lpu3dnet.modules.components import *    
-from lpu3dnet.init_yaml import config_vqgan as config
+from lpu3dnet.modules.components import *
 
 class Encoder(nn.Module):
     def __init__(
             self,
-            image_channels=config['architecture']['encoder']['img_channels'],
-            latent_dim=config['architecture']['encoder']['latent_dim'],
-            num_groups=config['architecture']['encoder']['num_groups'],
-            num_res_blocks=config['architecture']['encoder']['num_res_blocks'],
-            channels=config['architecture']['encoder']['channels']
+            image_channels,
+            latent_dim,
+            num_groups,
+            num_res_blocks,
+            channels
             ):
         super(Encoder, self).__init__()
         # compress high dimensional 3D tensor to low dimensional 3D tensor (256,2,2,2)
@@ -43,7 +42,7 @@ class Encoder(nn.Module):
 
 # test
 if __name__ == "__main__":
-    enc = Encoder()
+    enc = Encoder(1,256,16,2,[16,16,64,128,256,512])
     print( 'The architecture is'+'\n{}'.format(
         summary(enc,(20,1,64,64,64)) 
         ))

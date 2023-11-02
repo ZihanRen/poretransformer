@@ -1,22 +1,20 @@
-#%%
+
 from torch import nn
 import torch
 from torchinfo import summary
-from lpu3dnet.init_yaml import config_vqgan as config
-
 
 class Codebook(nn.Module):
     def __init__(
             self,
-            num_codebook_vectors=config['architecture']['codebook']['size'],
-            latent_dim=config['architecture']['codebook']['latent_dim'],
-            beta_c = config['architecture']['codebook']['beta_c'],
-            autoencoder=config['architecture']['codebook']['autoencoder'],
-            legacy = config['architecture']['codebook']['legacy']
+            size,
+            latent_dim,
+            beta_c,
+            autoencoder,
+            legacy
             ):
         
         super(Codebook, self).__init__()
-        self.num_codebook_vectors = int(num_codebook_vectors)
+        self.size = int(size)
         self.latent_dim = latent_dim
         self.beta_c = beta_c
         self.autoencoder = autoencoder
@@ -24,8 +22,8 @@ class Codebook(nn.Module):
         
         # storage vector embedding layer - this layer is learnable
         if not self.autoencoder:
-            self.embedding = nn.Embedding(self.num_codebook_vectors, self.latent_dim)
-            self.embedding.weight.data.uniform_(-1.0 / self.num_codebook_vectors, 1.0 / self.num_codebook_vectors)
+            self.embedding = nn.Embedding(self.size, self.latent_dim)
+            self.embedding.weight.data.uniform_(-1.0 / self.size, 1.0 / self.size)
 
     def forward(self, z):
         if self.autoencoder:
@@ -44,7 +42,7 @@ class Codebook(nn.Module):
         min_encoding_indices = torch.argmin(d, dim=1).unsqueeze(1)
         min_encodings = torch.zeros(
             min_encoding_indices.shape[0],
-            self.num_codebook_vectors).to(z)
+            self.size).to(z)
         
         # construct one hot vector (# Vectors,num_codebook_vectors)
         min_encodings.scatter_(1, min_encoding_indices, 1)
@@ -76,7 +74,7 @@ class Codebook(nn.Module):
     def get_codebook_entry(self, indices, shape):
         # shape specifying (batch, height, width, channel)
         # TODO: check for more easy handling with nn.Embedding
-        min_encodings = torch.zeros(indices.shape[0], self.num_codebook_vectors).to(indices)
+        min_encodings = torch.zeros(indices.shape[0], self.size).to(indices)
         min_encodings.scatter_(1, indices[:,None], 1)
 
         # get quantized latent vectors
@@ -92,13 +90,18 @@ class Codebook(nn.Module):
 
 
 
-#%%
-if __name__ == "__main__":
-    cod = Codebook()
-    # print( 'The architecture is'+'\n{}'.format(
-    #     summary(cod,(20,config['architecture']['codebook']['latent_dim'],2,2,2)) 
-    #     ))
-    
-    a,b,c = cod(torch.randn(20,config['architecture']['codebook']['latent_dim'],2,2,2))
 
-# %%
+if __name__ == "__main__":
+    latent_dim = 256
+    cod = Codebook(3000,
+                   latent_dim,
+                   0.2,
+                   False,
+                   True)
+    print( 'The architecture is'+'\n{}'.format(
+        summary(cod,(20,latent_dim,2,2,2)) 
+        ))
+    
+    # a,b,c = cod(torch.randn(20,latent_dim,2,2,2))
+
+

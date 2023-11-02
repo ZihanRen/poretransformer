@@ -1,19 +1,49 @@
-#%%
 from lpu3dnet.modules import decoder,encoder,codebook
 import torch 
 from torch import nn 
 from torchinfo import summary
+import hydra
+from omegaconf import OmegaConf
 
 class VQGAN(nn.Module):
-    def __init__(self,latent_dim=256):
+    def __init__(self,cfg):
         super(VQGAN, self).__init__()
-        self.encoder = encoder.Encoder()
-        self.decoder = decoder.Decoder()
-        self.codebook = codebook.Codebook()
+
+        self.encoder = encoder.Encoder(
+            image_channels=cfg.architecture.encoder.img_channels,
+            latent_dim=cfg.architecture.encoder.latent_dim,
+            num_groups=cfg.architecture.encoder.num_groups,
+            num_res_blocks=cfg.architecture.encoder.num_res_blocks,
+            channels=cfg.architecture.encoder.channels
+        )
+        
+        self.decoder = decoder.Decoder(
+            image_channels=cfg.architecture.decoder.img_channels,
+            latent_dim=cfg.architecture.decoder.latent_dim,
+            num_groups=cfg.architecture.decoder.num_groups,
+            num_res_blocks=cfg.architecture.decoder.num_res_blocks,
+            channels=cfg.architecture.decoder.channels
+        )
+
+        self.codebook = codebook.Codebook(
+            size=cfg.architecture.codebook.size,
+            latent_dim=cfg.architecture.codebook.latent_dim,
+            beta_c=cfg.architecture.codebook.beta_c,
+            autoencoder=cfg.architecture.codebook.autoencoder,
+            legacy=cfg.architecture.codebook.legacy
+        )
 
         # conv layer before codebook
-        self.quant_conv = nn.Conv3d(latent_dim, latent_dim, 1)
-        self.post_quant_conv = nn.Conv3d(latent_dim, latent_dim, 1)
+        self.quant_conv = nn.Conv3d(
+            cfg.architecture.codebook.latent_dim,
+            cfg.architecture.codebook.latent_dim,
+            1)
+        
+        # conv layer after codebook
+        self.post_quant_conv = nn.Conv3d(
+            cfg.architecture.codebook.latent_dim,
+            cfg.architecture.codebook.latent_dim,
+            1)
 
     def forward(self, imgs):
         encoded_images = self.encoder(imgs)
@@ -53,5 +83,15 @@ class VQGAN(nn.Module):
 
 
 if __name__ == "__main__":
-    model = VQGAN()
-    summary(model, input_size=(20,1,64,64,64))
+    experiment_idx = 2
+    @hydra.main(
+    config_path=f"/journel/s0/zur74/test/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
+    config_name="vqgan",
+    version_base='1.2')
+
+    def main(cfg):
+        # print(OmegaConf.to_yaml(cfg))
+        model = VQGAN(cfg)
+        summary(model, input_size=(20,1,64,64,64))
+    
+    main()

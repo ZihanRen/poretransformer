@@ -10,14 +10,13 @@ from torch.utils.data import DataLoader
 import pickle
 import time
 from datetime import timedelta
-from lpu3dnet.init_yaml import config_vqgan as config
 import argparse
 import shutil
+import hydra
 
-
-parser = argparse.ArgumentParser(description='Experiment setup')
-parser.add_argument("--ex",type=int, required=True, help="set up experiment idx")
-args = parser.parse_args()
+# parser = argparse.ArgumentParser(description='Experiment setup')
+# parser.add_argument("--ex",type=int, required=True, help="set up experiment idx")
+# args = parser.parse_args()
 
 
 def save_to_pkl(my_list, file_path):
@@ -32,39 +31,36 @@ def save_to_pkl(my_list, file_path):
         pickle.dump(my_list, f)
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 class TrainVQGAN:
     def __init__(
             self,
-            device = device,
-            lr_vqgan=config['train']['lr_vqgan'],
-            lr_disc=config['train']['lr_disc'],
-            beta1=config['train']['beta1'],
-            beta2=config['train']['beta2'],
-            disc_factor=config['train']['disc_factor'],
-            threshold=config['train']['disc_start'],
-            experiment_idx = args.ex,
-            epochs = config['train']['epochs'],
-            w_embed = config['train']['w_embed'],
-            codebook_weight_increase_per_epoch=config['train']['codebook_weight_increase_per_epoch'],
-            drop_last = config['train']['drop_last']
+            cfg,
+            device,
             ):
-        
-        self.disc_factor = disc_factor
+        # use self.cfg mainly on modules
+        self.cfg = cfg
+        self.disc_factor = cfg.train.disc_factor    
         self.device = device
-        self.vqgan = vqgan.VQGAN().to(device=self.device)
-        self.discriminator = discriminator.Discriminator().to(device=self.device)
-        self.lr_vqgan = lr_vqgan
-        self.lr_disc = lr_disc
-        self.beta1 = beta1
-        self.beta2 = beta2
-        self.experiment_idx = experiment_idx
-        self.epochs = epochs
-        self.threshold = threshold
-        self.w_embed = w_embed
-        self.codebook_weight_increase_per_epoch = codebook_weight_increase_per_epoch
-        self.drop_last = drop_last
+
+        # model initialization
+        self.vqgan = vqgan.VQGAN(self.cfg).to(device=self.device)
+        self.discriminator = discriminator.Discriminator(
+                        image_channels = self.cfg.architecture.discriminator.img_channels,
+                        num_filters_last = self.cfg.architecture.discriminator.init_filters_num,
+                        n_layers = self.cfg.architecture.discriminator.num_layers
+                        ).to(device=self.device)
+
+        self.lr_vqgan = cfg.train.lr_vqgan
+        self.lr_disc = cfg.train.lr_disc
+        self.beta1 = cfg.train.beta1
+        self.beta2 = cfg.train.beta2
+        self.epochs = cfg.train.epochs
+        self.threshold = cfg.train.disc_start
+        self.w_embed = cfg.train.w_embed
+        self.codebook_weight_increase_per_epoch = cfg.train.codebook_weight_increase_per_epoch
+        self.drop_last = cfg.train.drop_last
+        self.batch_size = cfg.train.batch_size
+        self.checkpoints_path = cfg.checkpoints.PATH
         
         self.opt_vq, self.opt_disc = self.configure_optimizers()
 
@@ -106,8 +102,13 @@ class TrainVQGAN:
                     os.remove(file_path)
 
         # initialize training folders
-        self.PATH =  os.path.join( config['checkpoints']['PATH'],f'ex{self.experiment_idx}' )
-        os.makedirs(self.PATH, exist_ok=True)
+        self.PATH =  os.path.join(
+                                  self.checkpoints_path,
+                                  self.cfg.experiment
+                                  )
+        
+        os.makedirs(self.PATH, 
+                    exist_ok=True)
         # clear all previous files in this folder
         remove_all_files_in_directory(self.PATH)
         
@@ -117,8 +118,14 @@ class TrainVQGAN:
         print("Training VQGAN:")
         start_time = time.time()
 
-        train_dataset = dataset_vqgan.Dataset_vqgan()
-        train_data_loader = DataLoader(train_dataset,batch_size=config['train']['epochs'],shuffle=True,drop_last=self.drop_last)
+        train_dataset = dataset_vqgan.Dataset_vqgan(self.cfg)
+        train_data_loader = DataLoader(
+                                train_dataset,
+                                batch_size=self.epochs,
+                                shuffle=True,
+                                drop_last=self.drop_last
+                                )
+        
         steps_per_epoch = len(train_data_loader)
 
         for epoch in range(self.epochs):
@@ -205,8 +212,15 @@ class TrainVQGAN:
         print("Training VQGAN:")
         start_time = time.time()
 
-        train_dataset = dataset_vqgan.Dataset_vqgan()
-        train_data_loader = DataLoader(train_dataset,batch_size=20,shuffle=True,drop_last=True)
+        train_dataset = dataset_vqgan.Dataset_vqgan(self.cfg)
+        
+        train_data_loader = DataLoader(
+                            train_dataset,
+                            batch_size=self.batch_size,
+                            shuffle=True,
+                            drop_last=self.drop_last
+                            )
+        
         steps_per_epoch = len(train_data_loader)
         weight_increase_per_step = self.codebook_weight_increase_per_epoch/steps_per_epoch
 
@@ -274,14 +288,17 @@ class TrainVQGAN:
 
 
 if __name__ == "__main__":
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train = TrainVQGAN()
-    train.prepare_training()
-    
-    # backup configuration parameters to checkpoint folder
-    shutil.copy(
-        '../lpu_vqgan.yaml',
-        os.path.join(train.PATH,f'lpu_vqgan_{train.experiment_idx}.yaml')
-        )
-    
-    train.train_nogan()
+    @hydra.main(
+        config_path=f"/journel/s0/zur74/test/LatentPoreUpscale3DNet/lpu3dnet/config/test",
+        config_name="vqgan",
+        version_base='1.2')
+    def main(cfg):
+        train = TrainVQGAN(device=device,cfg=cfg)
+        train.prepare_training()
+        train.train_nogan()
+
+        
+    main()

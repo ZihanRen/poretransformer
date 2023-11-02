@@ -2,16 +2,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchinfo import summary
 from lpu3dnet.modules.components import *
-from lpu3dnet.init_yaml import config_vqgan as config
 
 
 class Decoder(nn.Module):
     def __init__(self,
-                 image_channels=config['architecture']['decoder']['img_channels'],
-                 latent_dim=config['architecture']['decoder']['latent_dim'],
-                 num_groups = config['architecture']['decoder']['num_groups'],
-                 num_res_blocks=config['architecture']['decoder']['num_res_blocks'],
-                channels=config['architecture']['decoder']['channels']
+                 image_channels,
+                 latent_dim,
+                 num_groups,
+                 num_res_blocks,
+                channels
                  ):
         
         super(Decoder, self).__init__()
@@ -43,7 +42,11 @@ class Decoder(nn.Module):
 
 # test
 if __name__ == "__main__":
-    enc = Decoder()
+    enc = Decoder(1,
+                  256,
+                  16,
+                  3,
+                  [512, 256, 128, 128, 64, 16, 16])
     print( 'The architecture is'+'\n{}'.format(
         summary(enc,(20,256,2,2,2)) 
         ))
