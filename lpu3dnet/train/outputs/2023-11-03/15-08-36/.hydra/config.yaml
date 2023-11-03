@@ -1,5 +1,5 @@
 Project: config_vqgan
-experiment: testtest
+experiment: ex3
 architecture:
   encoder:
     img_channels: 1
@@ -16,7 +16,7 @@ architecture:
   codebook:
     size: 3000
     latent_dim: 256
-    beta_c: 0.3
+    beta_c: 0.4
     autoencoder: false
     legacy: false
   decoder:
@@ -48,14 +48,15 @@ data:
 checkpoints:
   PATH: /journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/train/checkpoints
 train:
-  epochs: 1
-  batch_size: 16
+  epochs: 150
+  batch_size: 30
   lr_vqgan: 0.0005
   lr_disc: 0.0001
   beta1: 0.9
   beta2: 0.999
   disc_factor: 0.2
-  disc_start: 1000
+  disc_start: 3000
   w_embed: 0.02
-  codebook_weight_increase_per_epoch: 0.05
+  codebook_weight_increase_per_epoch: 0.1
   drop_last: true
+  g_lambda: 5

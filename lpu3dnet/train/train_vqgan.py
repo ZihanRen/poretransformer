@@ -3,6 +3,7 @@ import torch
 from lpu3dnet.frame import vqgan
 from lpu3dnet.modules import discriminator
 from lpu3dnet.train import dataset_vqgan
+from lpu3dnet.modules.components import gradient_penalty
 import os
 from tqdm import tqdm
 from torch.nn import functional as F
@@ -10,13 +11,7 @@ from torch.utils.data import DataLoader
 import pickle
 import time
 from datetime import timedelta
-import argparse
-import shutil
 import hydra
-
-# parser = argparse.ArgumentParser(description='Experiment setup')
-# parser.add_argument("--ex",type=int, required=True, help="set up experiment idx")
-# args = parser.parse_args()
 
 
 def save_to_pkl(my_list, file_path):
@@ -61,6 +56,7 @@ class TrainVQGAN:
         self.drop_last = cfg.train.drop_last
         self.batch_size = cfg.train.batch_size
         self.checkpoints_path = cfg.checkpoints.PATH
+        self.g_lambda = cfg.train.g_lambda
         
         self.opt_vq, self.opt_disc = self.configure_optimizers()
 
@@ -93,6 +89,7 @@ class TrainVQGAN:
         self.training_losses['total_loss_per_epoch'] = []
         self.training_losses['perplexity'] = []
         self.training_losses['time'] = []
+        self.training_losses['gp'] = []
 
         def remove_all_files_in_directory(directory):
             """Removes all files in the specified directory."""
@@ -119,19 +116,22 @@ class TrainVQGAN:
         start_time = time.time()
 
         train_dataset = dataset_vqgan.Dataset_vqgan(self.cfg)
+        
         train_data_loader = DataLoader(
-                                train_dataset,
-                                batch_size=self.epochs,
-                                shuffle=True,
-                                drop_last=self.drop_last
-                                )
+                            train_dataset,
+                            batch_size=self.batch_size,
+                            shuffle=True,
+                            drop_last=self.drop_last
+                            )
         
         steps_per_epoch = len(train_data_loader)
+        weight_increase_per_step = self.codebook_weight_increase_per_epoch/steps_per_epoch
 
         for epoch in range(self.epochs):
             
 
             trian_loss_per_epoch = 0
+
             with tqdm(
                 train_data_loader,
                 total=steps_per_epoch,
@@ -139,58 +139,75 @@ class TrainVQGAN:
                 ) as pbar:
 
                 for i, imgs in enumerate(pbar):
+                    
                     imgs = imgs.to(device=self.device)
-
                     # get decoded image and embedding loss
                     decoded_images, codebook_info, q_loss = self.vqgan(imgs)
-                    
+                    perplexity = codebook_info[0]
+                    # calculate gradident penalty
                     # get discriminator values
-                    disc_real = self.discriminator(imgs)
-                    disc_fake = self.discriminator(decoded_images)
-
                     # calculate loss parameter for GAN
                     disc_factor = self.vqgan.adopt_weight(
                         self.disc_factor, 
                         epoch*steps_per_epoch+i, 
                         threshold=self.threshold)
 
-                    # reconstruction loss #TODO: check if this is correct
-                    rec_loss = F.mse_loss(imgs,decoded_images)
+                    ############################### Train Discriminator ##################################
+                    self.discriminator.zero_grad()
+                    gp = gradient_penalty(
+                        self.discriminator,
+                        imgs,
+                        decoded_images,
+                        device=self.device)
+                    gp = self.g_lambda * gp
+                    # you need to backpropagate gradident penalty loss twice
+                    gp.backward()
 
-                    # generator loss
-                    g_loss = (-torch.mean(disc_fake)) * disc_factor
-
-                    # embedding loss + discriminator loss (loss for not fooling discriminator)
-                    vq_loss = self.w_embed * q_loss + rec_loss + g_loss
-
-                    d_loss_real = torch.mean(F.relu(1. - disc_real))
-                    d_loss_fake = torch.mean(F.relu(1. + disc_fake))
-
-                    # discriminator loss - loss for being fooled by generator
-                    gan_loss = disc_factor * 0.5*(d_loss_real + d_loss_fake)
-
-                    
-                    self.opt_vq.zero_grad()
-                    vq_loss.backward(retain_graph=True)
-
-                    self.opt_disc.zero_grad()
-                    gan_loss.backward()
-
-                    self.opt_vq.step()
+                    disc_fake = self.discriminator(decoded_images.detach())
+                    disc_real = self.discriminator(imgs)
+                    d_loss = -(torch.mean(disc_real) - torch.mean(disc_fake)) 
+                    d_loss = disc_factor * d_loss
+                    d_loss.backward()
                     self.opt_disc.step()
 
+                    ############################### Train Generator ##################################
+                    # reconstruction loss #TODO: check better options
+                    self.vqgan.zero_grad()
+                    disc_fake = self.discriminator(decoded_images)
+                    rec_loss = F.mse_loss(imgs,decoded_images)
+                    g_loss = (-torch.mean(disc_fake)) * disc_factor
+                    # gradually increase weight of embedding loss
+                    weight_q_loss = min(weight_increase_per_step * (epoch*steps_per_epoch+i),1)
+                    q_loss = weight_q_loss * q_loss
+                    # embedding loss + discriminator loss (loss for not fooling discriminator)
+                    vq_loss = q_loss + rec_loss + g_loss
+                    vq_loss.backward()
+                    self.opt_vq.step()
+
+
+                    ############################## Tracking Losses ####################################
                     # calculate training loss and print out
-                    train_loss = vq_loss + gan_loss
-                    pbar.set_description(f"Step: {i+1}/{steps_per_epoch}")
+                    train_loss = vq_loss + d_loss
+
+                    pbar.set_description(f"Epoch {epoch} at Step: {i+1}/{steps_per_epoch}")
                     pbar.set_postfix(Loss=train_loss.item())
+
                     trian_loss_per_epoch += train_loss.item()
 
+                    # check if tensor
+                    if isinstance(q_loss, torch.Tensor):
+                        self.training_losses['q_loss'].append(q_loss.item())
+                    else:
+                        self.training_losses['q_loss'].append(q_loss)
+
                     # save losses per step
-                    self.training_losses['q_loss'].append(q_loss.item())
                     self.training_losses['rec_loss'].append(rec_loss.item())
-                    self.training_losses['d_loss'].append(gan_loss.item())
+                    self.training_losses['gp'].append(gp.item())
+
+                    self.training_losses['d_loss'].append(d_loss.item())
                     self.training_losses['g_loss'].append(g_loss.item())
                     self.training_losses['total_loss'].append(train_loss.item())
+                    self.training_losses['perplexity'].append(perplexity.item())
             
             # save progress per epoch
             end_time = time.time()
@@ -290,15 +307,15 @@ class TrainVQGAN:
 if __name__ == "__main__":
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    exp = 3
 
     @hydra.main(
-        config_path=f"/journel/s0/zur74/test/LatentPoreUpscale3DNet/lpu3dnet/config/test",
+        config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{exp}",
         config_name="vqgan",
         version_base='1.2')
     def main(cfg):
         train = TrainVQGAN(device=device,cfg=cfg)
         train.prepare_training()
-        train.train_nogan()
+        train.train()
 
-        
     main()
