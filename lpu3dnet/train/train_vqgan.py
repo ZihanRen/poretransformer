@@ -161,7 +161,7 @@ class TrainVQGAN:
                         device=self.device)
                     gp = self.g_lambda * gp
                     # you need to backpropagate gradident penalty loss twice
-                    gp.backward()
+                    gp.backward(retain_graph=True)
 
                     disc_fake = self.discriminator(decoded_images.detach())
                     disc_real = self.discriminator(imgs)
