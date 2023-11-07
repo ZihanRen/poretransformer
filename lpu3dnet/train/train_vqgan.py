@@ -34,7 +34,7 @@ class TrainVQGAN:
             ):
         # use self.cfg mainly on modules
         self.cfg = cfg
-        self.disc_factor = cfg.train.disc_factor    
+        self.disc_factor = cfg.train.disc_factor
         self.device = device
 
         # model initialization
@@ -264,7 +264,7 @@ class TrainVQGAN:
                     rec_loss = F.mse_loss(imgs,decoded_images)
 
                     # delay the update of codebook at the beginning
-                    weight_q_loss = min(weight_increase_per_step * (epoch*steps_per_epoch+i),1)
+                    weight_q_loss = min(weight_increase_per_step * (epoch*steps_per_epoch+i),1.4)
                     q_loss = weight_q_loss * q_loss
 
                     vq_loss =  q_loss + rec_loss
@@ -316,6 +316,6 @@ if __name__ == "__main__":
     def main(cfg):
         train = TrainVQGAN(device=device,cfg=cfg)
         train.prepare_training()
-        train.train()
+        train.train_nogan()
 
     main()

@@ -64,7 +64,6 @@ class Codebook(nn.Module):
         e_mean = torch.mean(min_encodings, dim=0)
         perplexity = torch.exp(-torch.sum(e_mean * torch.log(e_mean + 1e-10)))
 
-
         # gradident trick since k nearest neighbor is not differentiable - consider RL??
         z_q = z + (z_q - z).detach()
         z_q = z_q.permute(0,4,1,2,3)

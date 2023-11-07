@@ -18,7 +18,7 @@ architecture:
     # codebook dimension
     latent_dim: 256
     # weight of commitment loss for z_n (embedding)
-    beta_c: 0.4
+    beta_c: 0.8
     autoencoder: false # whether to use autoencoder to replace genereator boolean
     legacy: false # whether to use legacy codebook boolean
 
@@ -49,7 +49,7 @@ checkpoints:
 # training parameters
 train:
   epochs: 150
-  batch_size: 30
+  batch_size: 16
   lr_vqgan: 0.0005 #TODO check - learning rate for vqgan
   lr_disc: 0.0001 # learning rate for discriminator
   beta1: 0.9
@@ -58,6 +58,6 @@ train:
   disc_start: 3000 # steps before starting discriminator
   # consider making w_embed dynamic adjusted by steps
   w_embed: 0.02 # weight of embedding loss weight*q_loss + (1-weight)*rec_loss; >0.5 -- larger weight on q loss
-  codebook_weight_increase_per_epoch: 0.1 # increase codebook weight by this amount per epoch until reaching to 1
-  drop_last: true # whether to drop last batch if it is smaller than batch_size
+  codebook_weight_increase_per_epoch: 0.02 # increase codebook weight by this amount per epoch until reaching to 1
+  drop_last: false # whether to drop last batch if it is smaller than batch_size
   g_lambda: 5 # gradient penalty lambda

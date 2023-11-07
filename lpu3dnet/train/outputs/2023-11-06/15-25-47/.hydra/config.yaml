@@ -16,7 +16,7 @@ architecture:
   codebook:
     size: 3000
     latent_dim: 256
-    beta_c: 0.4
+    beta_c: 0.8
     autoencoder: false
     legacy: false
   decoder:
@@ -49,7 +49,7 @@ checkpoints:
   PATH: /journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/train/checkpoints
 train:
   epochs: 150
-  batch_size: 30
+  batch_size: 16
   lr_vqgan: 0.0005
   lr_disc: 0.0001
   beta1: 0.9
@@ -57,6 +57,6 @@ train:
   disc_factor: 0.2
   disc_start: 3000
   w_embed: 0.02
-  codebook_weight_increase_per_epoch: 0.1
-  drop_last: true
+  codebook_weight_increase_per_epoch: 0.02
+  drop_last: false
   g_lambda: 5
