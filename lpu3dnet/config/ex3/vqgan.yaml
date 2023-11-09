@@ -1,6 +1,6 @@
 Project: config_vqgan
 
-experiment: ex3 #TODO not list exp idx here. Should be controlled by argparse etc. # This has to be string
+experiment: ex3
 
 architecture:
   encoder:
@@ -14,7 +14,7 @@ architecture:
   
   codebook:
     # codebook size
-    size: 3000
+    size: 6000
     # codebook dimension
     latent_dim: 256
     # weight of commitment loss for z_n (embedding)
@@ -55,9 +55,12 @@ train:
   beta1: 0.9
   beta2: 0.999
   disc_factor: 0.2 # weight of discriminator loss
-  disc_start: 3000 # steps before starting discriminator
+  disc_start: 1000 # steps before starting discriminator
   # consider making w_embed dynamic adjusted by steps
   w_embed: 0.02 # weight of embedding loss weight*q_loss + (1-weight)*rec_loss; >0.5 -- larger weight on q loss
   codebook_weight_increase_per_epoch: 0.02 # increase codebook weight by this amount per epoch until reaching to 1
   drop_last: false # whether to drop last batch if it is smaller than batch_size
-  g_lambda: 5 # gradient penalty lambda
+  g_lambda: 10 # weight of gradient penalty
+  max_weight_q_loss: 1.3 # maximum weight of q loss
+  load_model: false
+  pretrained_model_epoch: -999

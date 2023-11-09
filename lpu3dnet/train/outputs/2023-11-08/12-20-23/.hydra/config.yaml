@@ -14,7 +14,7 @@ architecture:
     - 256
     - 512
   codebook:
-    size: 3000
+    size: 6000
     latent_dim: 256
     beta_c: 0.8
     autoencoder: false
@@ -55,8 +55,11 @@ train:
   beta1: 0.9
   beta2: 0.999
   disc_factor: 0.2
-  disc_start: 3000
+  disc_start: 1000
   w_embed: 0.02
   codebook_weight_increase_per_epoch: 0.02
   drop_last: false
-  g_lambda: 5
+  g_lambda: 10
+  max_weight_q_loss: 1.3
+  load_model: false
+  pretrained_model_epoch: -999

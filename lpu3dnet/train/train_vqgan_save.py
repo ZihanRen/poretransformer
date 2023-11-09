@@ -36,9 +36,22 @@ class TrainVQGAN:
         self.cfg = cfg
         self.disc_factor = cfg.train.disc_factor
         self.device = device
+        self.load_model = cfg.train.load_model
+        self.pretrained_model_epoch = cfg.train.pretrained_model_epoch
 
-        # model initialization
-        self.vqgan = vqgan.VQGAN(self.cfg).to(device=self.device)
+        if self.load_model:
+            root_path = os.path.join(cfg.checkpoints.PATH, cfg.experiment)
+            self.vqgan = vqgan.VQGAN(cfg).to(device=self.device)
+            PATH_model = os.path.join(root_path,f'vqgan_epoch_{self.pretrained_model_epoch}.pth')
+            self.vqgan.load_state_dict(
+                torch.load(
+                        PATH_model,
+                        map_location=torch.device(self.device)
+                        )
+                )
+        else:
+            self.vqgan = vqgan.VQGAN(self.cfg).to(device=self.device)
+        
         self.discriminator = discriminator.Discriminator(
                         image_channels = self.cfg.architecture.discriminator.img_channels,
                         num_filters_last = self.cfg.architecture.discriminator.init_filters_num,
@@ -46,6 +59,8 @@ class TrainVQGAN:
                         ).to(device=self.device)
 
         self.lr_vqgan = cfg.train.lr_vqgan
+        if self.load_model:
+            self.lr_vqgan = cfg.train.lr_vqgan/10
         self.lr_disc = cfg.train.lr_disc
         self.beta1 = cfg.train.beta1
         self.beta2 = cfg.train.beta2
@@ -107,8 +122,9 @@ class TrainVQGAN:
         
         os.makedirs(self.PATH, 
                     exist_ok=True)
-        # clear all previous files in this folder
-        remove_all_files_in_directory(self.PATH)
+        if not self.cfg.train.load_model:
+            # clear all previous files in this folder starting from new models
+            remove_all_files_in_directory(self.PATH)
         
 
     def train(self):
@@ -129,6 +145,8 @@ class TrainVQGAN:
         weight_increase_per_step = self.codebook_weight_increase_per_epoch/steps_per_epoch
 
         for epoch in range(self.epochs):
+            # update new epoch here
+            epoch += self.pretrained_model_epoch
             
 
             trian_loss_per_epoch = 0
@@ -243,6 +261,8 @@ class TrainVQGAN:
         weight_increase_per_step = self.codebook_weight_increase_per_epoch/steps_per_epoch
 
         for epoch in range(self.epochs):
+            if self.load_model:
+                epoch += self.pretrained_model_epoch
             
             trian_loss_per_epoch = 0
             
@@ -308,7 +328,7 @@ class TrainVQGAN:
 if __name__ == "__main__":
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    exp = 2
+    exp = 3
 
     @hydra.main(
         config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{exp}",
