@@ -2,6 +2,7 @@
 from torch import nn
 import torch
 from torchinfo import summary
+import torch.nn.functional as F
 
 class Codebook(nn.Module):
     def __init__(
@@ -88,15 +89,94 @@ class Codebook(nn.Module):
         return z_q
 
 
+class Codebook_EMA(nn.Module):
+    # for detailed explnation, plz check
+    # https://github.com/ZihanRen/what_i_learned/blob/main/gan/VQGAN.ipynb
+
+    def __init__(self, 
+                 size,
+                 latent_dim,
+                 beta_c,
+                 decay,
+                 epsilon=1e-5): # a super small number for divisible
+        super(Codebook_EMA, self).__init__()
+        
+        self.latent_dim = latent_dim
+        self.size = size
+        
+        self.embedding = nn.Embedding(self.size, self.latent_dim)
+        self.embedding.weight.data.normal_()
+        self.beta_c = beta_c
+        
+        self.register_buffer('_ema_cluster_size', torch.zeros(size))
+        self._ema_w = nn.Parameter(torch.Tensor(size, self.latent_dim))
+        self._ema_w.data.normal_()
+        
+        self.decay = decay
+        self.epsilon = epsilon
+
+    def forward(self, z):
+        z = z.permute(0, 2, 3, 4, 1).contiguous()        
+        z_flattened = z.view(-1, self.latent_dim)        
+        d = torch.sum(z_flattened**2, dim=1, keepdim=True) + \
+            torch.sum(self.embedding.weight**2, dim=1) - \
+            2*(torch.matmul(z_flattened, self.embedding.weight.t()))
+            
+        min_encoding_indices = torch.argmin(d, dim=1).unsqueeze(1)
+        encodings = torch.zeros(
+            min_encoding_indices.shape[0],
+            self.size).to(z)
+        encodings.scatter_(1, min_encoding_indices, 1)        
+        z_q = torch.matmul(encodings, self.embedding.weight).view(z.shape)
+        
+        # Use EMA to update the embedding vectors
+        if self.training:
+
+            
+            self._ema_cluster_size = self._ema_cluster_size * self.decay + \
+                                     (1 - self.decay) * torch.sum(encodings, 0)
+            
+            # Laplace smoothing
+            n = torch.sum(self._ema_cluster_size.data)
+            self._ema_cluster_size = (
+                (self._ema_cluster_size + self.epsilon)
+                / (n + self.size * self.size) * n)
+            
+            dw = torch.matmul(encodings.t(), z_flattened)
+            self._ema_w = nn.Parameter(
+                self._ema_w * self.decay + (1 - self.decay) * dw
+                )
+            self.embedding.weight = nn.Parameter(
+                self._ema_w / self._ema_cluster_size.unsqueeze(1)
+                )
+        
+        # commitment loss
+        commitment_loss = F.mse_loss(z_q.detach(), z)
+        loss = self.beta_c * commitment_loss
+        
+        # Straight Through Estimator
+        z_q = z + (z_q - z).detach()
+        z_q = z_q.permute(0,4,1,2,3)
+        
+        # perplexity calculation
+        e_mean = torch.mean(encodings, dim=0)
+        perplexity = torch.exp(-torch.sum(e_mean * torch.log(e_mean + 1e-10)))
+        
+        # convert quantized from BHWC -> BCHW
+        return z_q,loss,(perplexity,encodings,min_encoding_indices)
 
 
 if __name__ == "__main__":
     latent_dim = 256
-    cod = Codebook(3000,
-                   latent_dim,
-                   0.2,
-                   False,
-                   True)
+    # cod = Codebook(3000,
+    #                latent_dim,
+    #                0.2,
+    #                False,
+    #                True)
+    cod = Codebook_EMA(3000,
+                       latent_dim,
+                       0.2,
+                       0.99)
     print( 'The architecture is'+'\n{}'.format(
         summary(cod,(20,latent_dim,2,2,2)) 
         ))

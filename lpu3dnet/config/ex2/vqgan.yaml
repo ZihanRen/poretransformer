@@ -2,6 +2,8 @@ Project: config_vqgan
 
 experiment: ex2
 
+usecodebook_ema: false  # Set to true to use Codebook_EMA
+
 architecture:
   encoder:
     img_channels: 1
@@ -18,9 +20,19 @@ architecture:
     # codebook dimension
     latent_dim: 256
     # weight of commitment loss for z_n (embedding)
-    beta_c: 0.8
+    beta_c: 1
     autoencoder: false # whether to use autoencoder to replace genereator boolean
     legacy: false # whether to use legacy codebook boolean
+
+  codebookEMA:
+    # codebook size
+    size: 3000
+    # codebook dimension
+    latent_dim: 256
+    # weight of commitment loss for z_n (embedding)
+    beta_c: 1 
+    decay: 0.9 # whether to use autoencoder to replace genereator boolean
+
 
   decoder:
     img_channels: 1
@@ -61,6 +73,6 @@ train:
   codebook_weight_increase_per_epoch: 0.02 # increase codebook weight by this amount per epoch until reaching to 1
   drop_last: true # whether to drop last batch if it is smaller than batch_size
   g_lambda: 10 # weight of gradient penalty
-  max_weight_q_loss: 1.2 # maximum weight of q loss
-  load_model: true
-  pretrained_model_epoch: 84
+  max_weight_q_loss: 2 # maximum weight of q loss
+  load_model: false
+  pretrained_model_epoch: -99

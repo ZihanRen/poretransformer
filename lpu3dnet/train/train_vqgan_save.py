@@ -277,7 +277,8 @@ class TrainVQGAN:
 
                     # get decoded image and embedding loss
                     decoded_images, codebook_info, q_loss = self.vqgan(imgs)
-                    perplexity = codebook_info[0]
+                    if not self.cfg.architecture.codebook.autoencoder:
+                        perplexity = codebook_info[0]
 
                     q_loss = q_loss or 0 # if q_loss is None, set it to 0
 
@@ -308,27 +309,29 @@ class TrainVQGAN:
                     
                     self.training_losses['rec_loss'].append(rec_loss.item())
                     self.training_losses['total_loss'].append(train_loss.item())
-                    self.training_losses['perplexity'].append(perplexity.item())
+                    if not self.cfg.architecture.codebook.autoencoder:
+                        self.training_losses['perplexity'].append(perplexity.item())
             
             # save progress per epoch
-            end_time = time.time()
-            duration = timedelta(seconds=end_time-start_time)
-            print(f'Training took {duration} seconds in total for now')
-            self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
-            self.training_losses['time'].append(duration)
-            
-            model_path = os.path.join(self.PATH,f"vqgan_epoch_{epoch+1}.pth")
-            loss_path = os.path.join(self.PATH,f"training_losses_epoch_{epoch+1}.pkl")
-            
-            torch.save(self.vqgan.state_dict(), model_path)
-            save_to_pkl(self.training_losses, loss_path)
+            if epoch % 5 == 0:
+                end_time = time.time()
+                duration = timedelta(seconds=end_time-start_time)
+                print(f'Training took {duration} seconds in total for now')
+                self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
+                self.training_losses['time'].append(duration)
+                
+                model_path = os.path.join(self.PATH,f"vqgan_epoch_{epoch+1}.pth")
+                loss_path = os.path.join(self.PATH,f"training_losses_epoch_{epoch+1}.pkl")
+                
+                torch.save(self.vqgan.state_dict(), model_path)
+                save_to_pkl(self.training_losses, loss_path)
 
 
 
 if __name__ == "__main__":
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    exp = 3
+    exp = 4
 
     @hydra.main(
         config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{exp}",
