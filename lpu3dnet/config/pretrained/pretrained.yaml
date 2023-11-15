@@ -1,9 +1,14 @@
-Project: config_vqgan
+Project: pretrained
 
+# which model to read from which experiment?
 experiment: ex1
-usecodebook_ema: false  # Set to true to use Codebook_EMA
+epoch: 120
 
-pretrained: false
+pretrained_codebook:
+  path: '/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/finetune/kmeans_6000.pkl'
+
+
+usecodebook_ema: false  # Set to true to use Codebook_EMA
 
 architecture:
   encoder:
@@ -56,23 +61,3 @@ data:
 
 checkpoints:
   PATH: /journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/train/checkpoints
-
-
-# training parameters
-train:
-  epochs: 150
-  batch_size: 16
-  lr_vqgan: 0.0005 #TODO check - learning rate for vqgan
-  lr_disc: 0.0001 # learning rate for discriminator
-  beta1: 0.9
-  beta2: 0.999
-  disc_factor: 0.2 # weight of discriminator loss
-  disc_start: 1000 # steps before starting discriminator
-  # consider making w_embed dynamic adjusted by steps
-  w_embed: 0.02 # weight of embedding loss weight*q_loss + (1-weight)*rec_loss; >0.5 -- larger weight on q loss
-  codebook_weight_increase_per_epoch: 0.02 # increase codebook weight by this amount per epoch until reaching to 1
-  drop_last: false # whether to drop last batch if it is smaller than batch_size
-  g_lambda: 10 # weight of gradient penalty
-  max_weight_q_loss: 1.2 # maximum weight of q loss
-  load_model: false
-  pretrained_model_epoch: -99

@@ -1,0 +1,72 @@
+Project: config_vqgan
+experiment: ex5
+usecodebook_ema: false
+pretrained: true
+architecture:
+  encoder:
+    img_channels: 1
+    latent_dim: 256
+    num_res_blocks: 2
+    num_groups: 16
+    channels:
+    - 16
+    - 16
+    - 64
+    - 128
+    - 256
+    - 512
+  codebook:
+    size: 3000
+    latent_dim: 256
+    beta_c: 0.8
+    autoencoder: true
+    legacy: false
+  codebookEMA:
+    size: 3000
+    latent_dim: 256
+    beta_c: 1
+    decay: 0.9
+  decoder:
+    img_channels: 1
+    latent_dim: 256
+    num_res_blocks: 3
+    num_groups: 16
+    channels:
+    - 512
+    - 256
+    - 128
+    - 128
+    - 64
+    - 16
+    - 16
+  discriminator:
+    img_channels: 1
+    init_filters_num: 64
+    num_layers: 3
+data:
+  PATH:
+    main_vol: /journel/s0/zur74/data/new_energy_well/train_vol/main_vol
+    sub_vol: /journel/s0/zur74/data/new_energy_well/train_vol/sub_vol
+  ct_idx:
+  - 2
+  - 3
+  - 4
+  - 5
+checkpoints:
+  PATH: /journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/train/checkpoints
+train:
+  epochs: 150
+  batch_size: 16
+  lr_vqgan: 5.0e-05
+  lr_disc: 0.0001
+  beta1: 0.9
+  beta2: 0.999
+  disc_factor: 0.2
+  disc_start: 1000
+  w_embed: 0.02
+  codebook_weight_increase_per_epoch: 0.05
+  drop_last: false
+  g_lambda: 10
+  max_weight_q_loss: 1.2
+  load_model: false
+  pretrained_model_epoch: -99

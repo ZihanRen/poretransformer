@@ -4,42 +4,29 @@ from torch import nn
 from torchinfo import summary
 import hydra
 from omegaconf import OmegaConf
-from lpu3dnet.frame.pretrained_models import Pretrained_Models
-import os
 
-class VQGAN(nn.Module):
+
+class Pretrained_Architecture(nn.Module):
     def __init__(self,cfg):
-        super(VQGAN, self).__init__()
+        super(Pretrained_Architecture, self).__init__()
         self.cfg = cfg
-        self.save_path = os.path.join(
-            self.cfg.checkpoints.PATH,
-            self.cfg.experiment
-            )
         
-        os.makedirs(self.save_path, 
-                    exist_ok=True)
+        self.encoder = encoder.Encoder(
+            image_channels=cfg.architecture.encoder.img_channels,
+            latent_dim=cfg.architecture.encoder.latent_dim,
+            num_groups=cfg.architecture.encoder.num_groups,
+            num_res_blocks=cfg.architecture.encoder.num_res_blocks,
+            channels=cfg.architecture.encoder.channels
+        )
 
-        if self.cfg.pretrained:
-            self.encoder = Pretrained_Models().encoder
-            self.decoder = Pretrained_Models().decoder
-            pretrained_codebook = Pretrained_Models().pretrained_codebook
-        else:
-            self.encoder = encoder.Encoder(
-                image_channels=cfg.architecture.encoder.img_channels,
-                latent_dim=cfg.architecture.encoder.latent_dim,
-                num_groups=cfg.architecture.encoder.num_groups,
-                num_res_blocks=cfg.architecture.encoder.num_res_blocks,
-                channels=cfg.architecture.encoder.channels
-            )
-
-            self.decoder = decoder.Decoder(
-                image_channels=cfg.architecture.decoder.img_channels,
-                latent_dim=cfg.architecture.decoder.latent_dim,
-                num_groups=cfg.architecture.decoder.num_groups,
-                num_res_blocks=cfg.architecture.decoder.num_res_blocks,
-                channels=cfg.architecture.decoder.channels
-            )
-            pretrained_codebook = None
+        self.decoder = decoder.Decoder(
+            image_channels=cfg.architecture.decoder.img_channels,
+            latent_dim=cfg.architecture.decoder.latent_dim,
+            num_groups=cfg.architecture.decoder.num_groups,
+            num_res_blocks=cfg.architecture.decoder.num_res_blocks,
+            channels=cfg.architecture.decoder.channels
+        )
+        pretrained_codebook = None
         
         if cfg.usecodebook_ema:
             self.codebook = codebook.Codebook_EMA(
@@ -114,25 +101,16 @@ class VQGAN(nn.Module):
     def load_checkpoint(self, path):
         self.load_state_dict(torch.load(path))
 
-    def save_checkpoint(self,epoch):
-        save_model_path = os.path.join(     
-            self.save_path,
-            f'vqgan_epoch_{epoch}.pth'
-            )
-        torch.save(self.state_dict(), save_model_path)
-
 
 if __name__ == "__main__":
-    experiment_idx = 5
     @hydra.main(
-    config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
-    config_name="vqgan",
+    config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/pretrained",
+    config_name="pretrained",
     version_base='1.2')
 
     def main(cfg):
         print(OmegaConf.to_yaml(cfg))
-        model = VQGAN(cfg)
+        model = Pretrained_Architecture(cfg)
         summary(model, input_size=(20,1,64,64,64))
-        model.save_checkpoint(0)
     
     main()

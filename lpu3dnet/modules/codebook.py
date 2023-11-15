@@ -11,20 +11,31 @@ class Codebook(nn.Module):
             latent_dim,
             beta_c,
             autoencoder,
-            legacy
+            legacy,
+            init_ema = None
             ):
         
         super(Codebook, self).__init__()
-        self.size = int(size)
-        self.latent_dim = latent_dim
-        self.beta_c = beta_c
         self.autoencoder = autoencoder
+        # initalize embedding layer based on pretrained weights or distribution
+        if not self.autoencoder:
+    
+            if init_ema is not None:
+                self.latent_dim = init_ema.shape[1]
+                self.size = init_ema.shape[0]
+                self.embedding = nn.Embedding(self.size, self.latent_dim)
+                self.embedding.weight.data = init_ema
+            else:
+                self.size = int(size)
+                self.latent_dim = latent_dim
+                self.embedding = nn.Embedding(self.size, self.latent_dim)
+                self.embedding.weight.data.uniform_(
+                    -1.0 / self.size,
+                    1.0 / self.size)
+        
+        self.beta_c = beta_c
         self.legacy = legacy
         
-        # storage vector embedding layer - this layer is learnable
-        if not self.autoencoder:
-            self.embedding = nn.Embedding(self.size, self.latent_dim)
-            self.embedding.weight.data.uniform_(-1.0 / self.size, 1.0 / self.size)
 
     def forward(self, z):
         if self.autoencoder:
@@ -98,19 +109,26 @@ class Codebook_EMA(nn.Module):
                  latent_dim,
                  beta_c,
                  decay,
-                 epsilon=1e-5): # a super small number for divisible
+                 epsilon=1e-5,
+                 init_ema = None): # a super small number for divisible
         super(Codebook_EMA, self).__init__()
+        # initalize embedding layer based on pretrained weights or distribution
+        if init_ema is not None:
+            self.latent_dim = init_ema.shape[1]
+            self.size = init_ema.shape[0]
+            self.embedding = nn.Embedding(self.size, self.latent_dim)
+            self.embedding.weight.data = init_ema
+            
+        else:
+            self.latent_dim = latent_dim
+            self.size = size
+            self.embedding = nn.Embedding(self.size, self.latent_dim)
+            self.embedding.weight.data.normal_()
         
-        self.latent_dim = latent_dim
-        self.size = size
-        
-        self.embedding = nn.Embedding(self.size, self.latent_dim)
-        self.embedding.weight.data.normal_()
         self.beta_c = beta_c
-        
         self.register_buffer('_ema_cluster_size', torch.zeros(size))
         self._ema_w = nn.Parameter(torch.Tensor(size, self.latent_dim))
-        self._ema_w.data.normal_()
+        self._ema_w.data = self.embedding.weight.data.clone()
         
         self.decay = decay
         self.epsilon = epsilon
@@ -167,16 +185,26 @@ class Codebook_EMA(nn.Module):
 
 
 if __name__ == "__main__":
+    from lpu3dnet.modules.codebook_init import Codebook_init
     latent_dim = 256
     # cod = Codebook(3000,
     #                latent_dim,
     #                0.2,
     #                False,
     #                True)
-    cod = Codebook_EMA(3000,
-                       latent_dim,
-                       0.2,
-                       0.99)
+    codebook_init = Codebook_init('/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/finetune/kmeans_30000.pkl')
+    pretrained_tensor = codebook_init.codebook_emd
+    # cod = Codebook_EMA(3000,
+    #                    latent_dim,
+    #                    0.2,
+    #                    0.99,
+    #                    init_ema=pretrained_tensor)
+    cod = Codebook(size=3000,
+                    latent_dim=256,
+                    beta_c=0.2,
+                    autoencoder=False,
+                    legacy=False,
+                    init_ema=pretrained_tensor)
     print( 'The architecture is'+'\n{}'.format(
         summary(cod,(20,latent_dim,2,2,2)) 
         ))

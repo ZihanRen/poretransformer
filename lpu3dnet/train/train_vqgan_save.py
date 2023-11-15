@@ -246,6 +246,7 @@ class TrainVQGAN:
         
 
         print("Training VQGAN:")
+        self.vqgan.save_checkpoint(-1)
         start_time = time.time()
 
         train_dataset = dataset_vqgan.Dataset_vqgan(self.cfg)
@@ -320,10 +321,8 @@ class TrainVQGAN:
                 self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
                 self.training_losses['time'].append(duration)
                 
-                model_path = os.path.join(self.PATH,f"vqgan_epoch_{epoch+1}.pth")
                 loss_path = os.path.join(self.PATH,f"training_losses_epoch_{epoch+1}.pkl")
-                
-                torch.save(self.vqgan.state_dict(), model_path)
+                self.vqgan.save_state_dict(epoch)
                 save_to_pkl(self.training_losses, loss_path)
 
 
@@ -331,7 +330,7 @@ class TrainVQGAN:
 if __name__ == "__main__":
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    exp = 4
+    exp = 5
 
     @hydra.main(
         config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{exp}",

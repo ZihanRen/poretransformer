@@ -1,6 +1,9 @@
 Project: config_vqgan
 experiment: ex4
 usecodebook_ema: true
+pretrained_codebook:
+  state: true
+  path: /journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/finetune/kmeans_6000.pkl
 architecture:
   encoder:
     img_channels: 1

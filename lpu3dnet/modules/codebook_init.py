@@ -22,7 +22,8 @@ class Codebook_init:
 
 
 if __name__ == "__main__":
-    codebook_init = Codebook_init('kmeans_6000.pkl')
+    path = '/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/finetune/kmeans_6000.pkl'
+    codebook_init = Codebook_init(path)
     print(codebook_init.codebook_emd.shape)
 
 # %%
