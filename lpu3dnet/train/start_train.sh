@@ -1,1 +1,1 @@
-nohup python -u train_vqgan_save.py &
+nohup python -u train_vqgan.py &

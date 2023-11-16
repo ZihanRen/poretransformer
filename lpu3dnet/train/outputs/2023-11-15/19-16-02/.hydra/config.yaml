@@ -24,7 +24,7 @@ architecture:
   codebookEMA:
     size: 3000
     latent_dim: 256
-    beta_c: 1
+    beta_c: 0.8
     decay: 0.9
   decoder:
     img_channels: 1
@@ -64,9 +64,9 @@ train:
   disc_factor: 0.2
   disc_start: 1000
   w_embed: 0.02
-  codebook_weight_increase_per_epoch: 0.05
+  codebook_weight_increase_per_epoch: 0.1
   drop_last: false
   g_lambda: 10
-  max_weight_q_loss: 1.2
+  max_weight_q_loss: 1
   load_model: false
   pretrained_model_epoch: -99

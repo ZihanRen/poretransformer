@@ -113,7 +113,7 @@ hydra:
     - hydra.mode=RUN
     task: []
   job:
-    name: train_vqgan_save
+    name: train_vqgan
     chdir: null
     override_dirname: ''
     id: ???
@@ -140,7 +140,7 @@ hydra:
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/train/outputs/2023-11-15/15-03-01
+    output_dir: /journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/train/outputs/2023-11-15/19-16-02
     choices:
       hydra/env: default
       hydra/callbacks: null

@@ -36,9 +36,22 @@ class TrainVQGAN:
         self.cfg = cfg
         self.disc_factor = cfg.train.disc_factor
         self.device = device
+        self.load_model = cfg.train.load_model
+        self.pretrained_model_epoch = cfg.train.pretrained_model_epoch
 
-        # model initialization
-        self.vqgan = vqgan.VQGAN(self.cfg).to(device=self.device)
+        if self.load_model:
+            root_path = os.path.join(cfg.checkpoints.PATH, cfg.experiment)
+            self.vqgan = vqgan.VQGAN(cfg).to(device=self.device)
+            PATH_model = os.path.join(root_path,f'vqgan_epoch_{self.pretrained_model_epoch}.pth')
+            self.vqgan.load_state_dict(
+                torch.load(
+                        PATH_model,
+                        map_location=torch.device(self.device)
+                        )
+                )
+        else:
+            self.vqgan = vqgan.VQGAN(self.cfg).to(device=self.device)
+        
         self.discriminator = discriminator.Discriminator(
                         image_channels = self.cfg.architecture.discriminator.img_channels,
                         num_filters_last = self.cfg.architecture.discriminator.init_filters_num,
@@ -46,6 +59,8 @@ class TrainVQGAN:
                         ).to(device=self.device)
 
         self.lr_vqgan = cfg.train.lr_vqgan
+        if self.load_model:
+            self.lr_vqgan = cfg.train.lr_vqgan/10
         self.lr_disc = cfg.train.lr_disc
         self.beta1 = cfg.train.beta1
         self.beta2 = cfg.train.beta2
@@ -107,8 +122,9 @@ class TrainVQGAN:
         
         os.makedirs(self.PATH, 
                     exist_ok=True)
-        # clear all previous files in this folder
-        remove_all_files_in_directory(self.PATH)
+        if not self.cfg.train.load_model:
+            # clear all previous files in this folder starting from new models
+            remove_all_files_in_directory(self.PATH)
         
 
     def train(self):
@@ -129,6 +145,8 @@ class TrainVQGAN:
         weight_increase_per_step = self.codebook_weight_increase_per_epoch/steps_per_epoch
 
         for epoch in range(self.epochs):
+            # update new epoch here
+            epoch += self.pretrained_model_epoch
             
 
             trian_loss_per_epoch = 0
@@ -228,6 +246,7 @@ class TrainVQGAN:
         
 
         print("Training VQGAN:")
+        self.vqgan.save_checkpoint(-1)
         start_time = time.time()
 
         train_dataset = dataset_vqgan.Dataset_vqgan(self.cfg)
@@ -243,6 +262,19 @@ class TrainVQGAN:
         weight_increase_per_step = self.codebook_weight_increase_per_epoch/steps_per_epoch
 
         for epoch in range(self.epochs):
+            # whether freeze or not
+            if epoch == 10:
+                self.vqgan.freeze_decoder()
+                self.vqgan.freeze_encoder()
+            
+            if epoch == 10:
+                self.vqgan.unfreeze_encoder()
+
+            if epoch == 20:
+                self.vqgan.unfreeze_decoder()
+
+            if self.load_model:
+                epoch += self.pretrained_model_epoch
             
             trian_loss_per_epoch = 0
             
@@ -257,7 +289,8 @@ class TrainVQGAN:
 
                     # get decoded image and embedding loss
                     decoded_images, codebook_info, q_loss = self.vqgan(imgs)
-                    perplexity = codebook_info[0]
+                    if not self.cfg.architecture.codebook.autoencoder:
+                        perplexity = codebook_info[0]
 
                     q_loss = q_loss or 0 # if q_loss is None, set it to 0
 
@@ -288,27 +321,27 @@ class TrainVQGAN:
                     
                     self.training_losses['rec_loss'].append(rec_loss.item())
                     self.training_losses['total_loss'].append(train_loss.item())
-                    self.training_losses['perplexity'].append(perplexity.item())
+                    if not self.cfg.architecture.codebook.autoencoder:
+                        self.training_losses['perplexity'].append(perplexity.item())
             
             # save progress per epoch
-            end_time = time.time()
-            duration = timedelta(seconds=end_time-start_time)
-            print(f'Training took {duration} seconds in total for now')
-            self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
-            self.training_losses['time'].append(duration)
-            
-            model_path = os.path.join(self.PATH,f"vqgan_epoch_{epoch+1}.pth")
-            loss_path = os.path.join(self.PATH,f"training_losses_epoch_{epoch+1}.pkl")
-            
-            torch.save(self.vqgan.state_dict(), model_path)
-            save_to_pkl(self.training_losses, loss_path)
+            if epoch % 5 == 0:
+                end_time = time.time()
+                duration = timedelta(seconds=end_time-start_time)
+                print(f'Training took {duration} seconds in total for now')
+                self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
+                self.training_losses['time'].append(duration)
+                
+                loss_path = os.path.join(self.PATH,f"training_losses_epoch_{epoch}.pkl")
+                self.vqgan.save_checkpoint(epoch)
+                save_to_pkl(self.training_losses, loss_path)
 
 
 
 if __name__ == "__main__":
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    exp = 2
+    exp = 5
 
     @hydra.main(
         config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{exp}",
