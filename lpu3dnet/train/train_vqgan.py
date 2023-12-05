@@ -60,7 +60,7 @@ class TrainVQGAN:
 
         self.lr_vqgan = cfg.train.lr_vqgan
         if self.load_model:
-            self.lr_vqgan = cfg.train.lr_vqgan/10
+            self.lr_vqgan = cfg.train.lr_vqgan/1.5
         self.lr_disc = cfg.train.lr_disc
         self.beta1 = cfg.train.beta1
         self.beta2 = cfg.train.beta2
@@ -263,15 +263,15 @@ class TrainVQGAN:
 
         for epoch in range(self.epochs):
             # whether freeze or not
-            if epoch == 10:
-                self.vqgan.freeze_decoder()
-                self.vqgan.freeze_encoder()
+            # if epoch == 10:
+            #     self.vqgan.freeze_decoder()
+            #     self.vqgan.freeze_encoder()
             
-            if epoch == 10:
-                self.vqgan.unfreeze_encoder()
+            # if epoch == 10:
+            #     self.vqgan.unfreeze_encoder()
 
-            if epoch == 20:
-                self.vqgan.unfreeze_decoder()
+            # if epoch == 20:
+            #     self.vqgan.unfreeze_decoder()
 
             if self.load_model:
                 epoch += self.pretrained_model_epoch
@@ -341,7 +341,7 @@ class TrainVQGAN:
 if __name__ == "__main__":
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    exp = 5
+    exp = 6
 
     @hydra.main(
         config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{exp}",

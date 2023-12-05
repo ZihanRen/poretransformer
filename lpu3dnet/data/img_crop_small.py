@@ -4,7 +4,9 @@ import pickle
 import numpy as np
 from tifffile import imread
 from tifffile import imwrite
-from lpu3dnet import init_yaml
+from hydra.experimental import compose, initialize
+from omegaconf import OmegaConf
+
 
 def save_pickle(PATH,data):
     with open(PATH,'wb') as f:
@@ -47,13 +49,15 @@ def delete_files_in_directory(directory_path):
     else:
         print(f"'{directory_path}' is not a valid directory")
 
+initialize(config_path=f"../config/ex1")
+cfg = compose(config_name="vqgan")
 
 #%% load large image
 import math
 img_list = []
 for i in range(0,6):
     PATH = os.path.join(
-        init_yaml.PATH['img_path']['main_vol'],
+        cfg.data.PATH.main_vol,
         f'main_{i}.tif'
         )
 
@@ -65,8 +69,8 @@ for i in range(0,6):
 #%% find the optimal image interval for sub-sampling
 
 im_size = 636
-crop_s = 128*3
-img_interval = 15
+crop_s = 64
+img_interval = 28
 
 def output_img_num(im_size,crop_s,img_interval):
     img_num_one_side = ( ((im_size - 1)  - crop_s) / img_interval )
@@ -85,7 +89,7 @@ img_one,_ = output_img_num(im_size,crop_s,img_interval)
 def crop_by_idx(img_list,crop_s,img_interval,ct_idx):
     
     save_PATH = os.path.join(
-        init_yaml.PATH['img_path']['sub_vol'],
+        cfg.data.PATH.sub_vol,
         'ct_{}'.format(ct_idx)
         )
     
@@ -118,9 +122,6 @@ def crop_by_idx(img_list,crop_s,img_interval,ct_idx):
 
                 idx += 1
 
-im_size = 636
-crop_s = 64
-img_interval = 30
 
 # begin cropping image
 for i in range(0,6):

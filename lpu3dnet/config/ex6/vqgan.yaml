@@ -1,9 +1,11 @@
 Project: config_vqgan
 
-experiment: ex3
+experiment: ex6
 
 usecodebook_ema: false  # Set to true to use Codebook_EMA
 pretrained: false
+
+usecodebook_topk: false # Set to true to use Codebook_topk module
 
 
 architecture:
@@ -13,22 +15,22 @@ architecture:
     num_res_blocks: 2
     num_groups: 16
     # reduce from 64->2: 64/(2^5) = 2
-    # if you want to have a codebook size of 4^3, reduce to 256  
-    channels: [16,16,64,128,256,512]
+    # if you want to have a codebook size of 4^3, reduce to 256 or reduce one more layer after 16  
+    channels: [16,64,128,256,512]
   
   codebook:
     # codebook size
-    size: 4000
+    size: 3000
     # codebook dimension
     latent_dim: 256
     # weight of commitment loss for z_n (embedding)
-    beta_c: 0.8
+    beta_c: 1
     autoencoder: false # whether to use autoencoder to replace genereator boolean
     legacy: false # whether to use legacy codebook boolean
 
   codebookEMA:
     # codebook size
-    size: 4000
+    size: 3000
     # codebook dimension
     latent_dim: 256
     # weight of commitment loss for z_n (embedding)
@@ -42,7 +44,7 @@ architecture:
     num_res_blocks: 3
     num_groups: 16
     # 2->4->8->16->32->64 (no upsampling for last layer & first layer)
-    channels: [512, 256, 128, 128, 64, 16, 16]
+    channels: [512, 256, 256, 64, 16, 16]
 
   discriminator:
     img_channels: 1
@@ -75,6 +77,6 @@ train:
   codebook_weight_increase_per_epoch: 0.02 # increase codebook weight by this amount per epoch until reaching to 1
   drop_last: true # whether to drop last batch if it is smaller than batch_size
   g_lambda: 10 # weight of gradient penalty
-  max_weight_q_loss: 1.2 # maximum weight of q loss
+  max_weight_q_loss: 2 # maximum weight of q loss
   load_model: false
-  pretrained_model_epoch: -999
+  pretrained_model_epoch: None

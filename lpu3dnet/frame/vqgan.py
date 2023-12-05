@@ -58,6 +58,14 @@ class VQGAN(nn.Module):
                 legacy=cfg.architecture.codebook.legacy,
                 init_ema=pretrained_codebook
             )
+        
+        if self.cfg.usecodebook_topk:
+            self.codebook = codebook.Codebook_topk(
+                size=cfg.architecture.codebook_topk.size,
+                latent_dim=cfg.architecture.codebook_topk.latent_dim,
+                beta_c=cfg.architecture.codebook_topk.beta_c,
+                top_k=cfg.architecture.codebook_topk.top_k,
+            )
 
         # conv layer before codebook
         self.quant_conv = nn.Conv3d(

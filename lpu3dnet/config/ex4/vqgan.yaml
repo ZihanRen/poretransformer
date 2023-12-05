@@ -4,6 +4,9 @@ experiment: ex4
 
 usecodebook_ema: true  # Set to true to use Codebook_EMA
 
+pretrained: false
+
+
 architecture:
   encoder:
     img_channels: 1
@@ -26,11 +29,11 @@ architecture:
 
   codebookEMA:
     # codebook size
-    size: 20000
+    size: 16000
     # codebook dimension
     latent_dim: 256
     # weight of commitment loss for z_n (embedding)
-    beta_c: 1 
+    beta_c: 0.4
     decay: 0.4 # whether to use autoencoder to replace genereator boolean
 
 
@@ -60,7 +63,7 @@ checkpoints:
 
 # training parameters
 train:
-  epochs: 200
+  epochs: 300
   batch_size: 16
   lr_vqgan: 0.0005 #TODO check - learning rate for vqgan
   lr_disc: 0.0001 # learning rate for discriminator

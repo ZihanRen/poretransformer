@@ -41,7 +41,10 @@ Results are not good and Reconstruction loss is high. Potential diagnostics:
 
 
 
-### Experiment 1
+### Experiment 3
+
+VQVAE + GAN series of experiments
+
 * VQVQE + GAN. WGAN & CNN encoder/decoder and codebook 
 * GAN - w loss; no gradident penalty; discriminator start learning after 1000 steps; discriminator update and generator update is in the same training loop;
 * VQGAN model is not learning or converging. Image quality is low.
@@ -56,3 +59,21 @@ Results are not good and Reconstruction loss is high. Potential diagnostics:
 * Separate discriminator update and generator update - making discriminator learn slower than VQ-VAE
 * adding penalty to GAN loss
 * increase training epoch??
+
+
+
+### Experiment 4
+* use codebook ema series of experiments
+* cannot converge - rec_Loss around 0.04
+
+
+
+### Experiment 5
+* pretrained autoencoder series of experiments
+
+
+
+
+### Experiment 6 
+* add more features basis vectors (expand 2->4 in each dimension so total is 64)
+* add more dataset (17000 ish -> 32000)

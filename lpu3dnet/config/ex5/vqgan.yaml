@@ -2,9 +2,9 @@ Project: config_vqgan
 
 experiment: ex5
 usecodebook_ema: false  # Set to true to use Codebook_EMA
+usecodebook_topk: true # Set to true to use Codebook_topk module
 
 pretrained: true
-
 architecture:
   encoder:
     img_channels: 1
@@ -33,6 +33,16 @@ architecture:
     # weight of commitment loss for z_n (embedding)
     beta_c: 0.8
     decay: 0.9 # whether to use autoencoder to replace genereator boolean
+
+  codebook_topk:
+    # codebook size
+    size: 3000
+    # codebook dimension
+    latent_dim: 256
+    # weight of commitment loss for z_n (embedding)
+    beta_c: 0.8
+    top_k: 3
+
 
   decoder:
     img_channels: 1
