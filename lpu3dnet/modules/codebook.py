@@ -79,7 +79,7 @@ class Codebook(nn.Module):
         z_q = z + (z_q - z).detach()
         z_q = z_q.permute(0,4,1,2,3)
 
-        return z_q, loss, (perplexity,min_encodings,min_encoding_indices)
+        return z_q, loss, (perplexity,min_encodings,0)
 
     def get_codebook_entry(self, indices, shape):
         # shape specifying (batch, height, width, channel)
@@ -92,9 +92,8 @@ class Codebook(nn.Module):
 
         if shape is not None:
             z_q = z_q.view(shape)
-
             # reshape back to match original input shape
-            z_q = z_q.permute(0, 3, 1, 2).contiguous()
+            # z_q = z_q.permute(0,2,3,4,1).contiguous()
 
         return z_q
 
@@ -283,17 +282,21 @@ class Codebook_EMA(nn.Module):
 if __name__ == "__main__":
     from lpu3dnet.modules.codebook_init import Codebook_init
     latent_dim = 256
-    # cod = Codebook(3000,
-    #                latent_dim,
-    #                0.2,
-    #                False,
-    #                True)
-    cod = Codebook_topk(3000,
-                     latent_dim=latent_dim,
-                     beta_c=0.2,
-                     legacy=False,
-                     init_ema=None,
-                     top_k=3)
+    cod = Codebook(3000,
+                   latent_dim,
+                   0.2,
+                   False,
+                   True)
+    
+    # z_vec = cod.get_codebook_entry(torch.tensor([0,1,2,3,4,5,6,7,8,9]),(10,latent_dim,1,1,1))
+    z_vec = cod.get_codebook_entry(torch.tensor([0,1,2,3,4,5,6,7,8,9]),shape=None)
+    print(z_vec.shape)
+    # cod = Codebook_topk(3000,
+    #                  latent_dim=latent_dim,
+    #                  beta_c=0.2,
+    #                  legacy=False,
+    #                  init_ema=None,
+    #                  top_k=3)
     
     
     # codebook_init = Codebook_init('/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/finetune/kmeans_30000.pkl')
@@ -309,9 +312,9 @@ if __name__ == "__main__":
     #                 autoencoder=False,
     #                 legacy=False,
     #                 init_ema=pretrained_tensor)
-    print( 'The architecture is'+'\n{}'.format(
-        summary(cod,(20,latent_dim,2,2,2)) 
-        ))
+    # print( 'The architecture is'+'\n{}'.format(
+    #     summary(cod,(20,latent_dim,2,2,2)) 
+    #     ))
     
     # a,b,c = cod(torch.randn(20,latent_dim,2,2,2))
 

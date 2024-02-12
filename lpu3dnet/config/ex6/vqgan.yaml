@@ -4,7 +4,6 @@ experiment: ex6
 
 usecodebook_ema: false  # Set to true to use Codebook_EMA
 pretrained: false
-
 usecodebook_topk: false # Set to true to use Codebook_topk module
 
 

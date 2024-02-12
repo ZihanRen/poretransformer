@@ -10,6 +10,20 @@ class GroupNorm(nn.Module):
     def forward(self, x):
         return self.gn(x)
 
+class LayerNorm(nn.Module):
+    """ LayerNorm but with an optional bias. PyTorch doesn't support simply bias=False """
+    # taken from Andrej Karpathy nanoGPT: https://github.com/karpathy/nanoGPT/blob/master/model.py
+
+
+    def __init__(self, ndim, bias):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(ndim))
+        self.bias = nn.Parameter(torch.zeros(ndim)) if bias else None
+
+    def forward(self, input):
+        return F.layer_norm(input, self.weight.shape, self.weight, self.bias, 1e-5)
+
+
 # Swish activation function
 class Swish(nn.Module):
     def forward(self, x):

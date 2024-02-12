@@ -93,7 +93,7 @@ class VQGAN(nn.Module):
         if not self.cfg.architecture.codebook.autoencoder:
             return decoded_images, (perplexity,min_encodings,codebook_indices), q_loss
         else:
-            return decoded_images, a, b
+            return decoded_images, b, a
 
     def encode(self, imgs):
         encoded_images = self.encoder(imgs)
