@@ -20,13 +20,6 @@ class Transformer(nn.Module):
             self.cfg_architecture
         )
 
-        self.save_path = os.path.join(
-            self.cfg.checkpoints.PATH,
-            self.cfg.experiment,
-            'transformer',                          
-                                      
-                                      )
-        os.makedirs(self.save_path, exist_ok=True)
 
     def forward(self, x, target=None):
         logits, loss = self.model(x, target)

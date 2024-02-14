@@ -1,0 +1,1 @@
+nohup python -u train_transformer.py &

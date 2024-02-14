@@ -3,8 +3,8 @@ experiment: ex6
 
 
 architecture:
-  block_size: 512 # 1728 for 3D, 512 for 2D # TODO Investigate lock size
-  vocab_size: 3000  # codebook size of VQ-VAE
+  block_size: 64 # 1728 for 3D, 512 for 2D # TODO Investigate lock size
+  vocab_size: 3001  # codebook size of VQ-VAE
   n_layer: 12 
   n_head: 12 # number of heads in multiheadattention model
   n_embd: 1080 # TODO investigate
@@ -26,15 +26,15 @@ checkpoints:
 # training parameters
 # TODO
 train:
-  p_keep: 0.9
-  sos_token: 0
+  p_keep: 0.5 #TODO
+  sos_token: 3000 # idx should be larger than vocab_size (3000) - 1
   load_model: False
   pretrained_transformer_epoch: -1
   pretrained_vqgan_epoch: 10 # identify which VQGAN to use for sampling
-  batch_size: 20 #TODO
-  epochs: 10
+  batch_size: 50 #TODO
+  epochs: 100
   learning_rate: 0.0005 #TODO check - learning rate for vqgan
   betas: [0.99,0.999] # learning rate for discriminator
-  weight_decay: 0.8
+  weight_decay: 0.01 #TODO check
 
   

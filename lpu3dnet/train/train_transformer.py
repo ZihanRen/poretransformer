@@ -109,7 +109,7 @@ class TrainTransformer:
 
     def train(self):
         
-        sos_tokens = self.cfg_transformer.train.sos_token
+        sos_token = self.cfg_transformer.train.sos_token
 
 
         print("Training transformer:")
@@ -145,7 +145,7 @@ class TrainTransformer:
                         img_tokens = self.vqgan.gen_img_tokens(imgs)
                     
                     # train transformer
-                    sos_tokens = torch.ones(img_tokens.shape[0], 1) * sos_tokens
+                    sos_tokens = torch.ones(img_tokens.shape[0], 1) * sos_token
                     sos_tokens = sos_tokens.long().to(self.device)
 
                     mask = torch.bernoulli(
@@ -164,11 +164,12 @@ class TrainTransformer:
                     perturbed_indices = torch.cat((sos_tokens, perturbed_indices), dim=1)
 
                     target = img_tokens
-                    print(target.shape)
-                    print(perturbed_indices.shape)
+                    perturbed_indices = perturbed_indices[:, :-1]
 
-                    logits, loss = self.transformer(perturbed_indices, target)
-                    loss.backward()
+
+                    logits, loss = self.transformer(x=perturbed_indices, target=target)
+                    self.opt.zero_grad()
+                    loss.backward() #TODO: check if this is correct. check the loss is correct or not
                     self.opt.step()
 
                     pbar.set_description(f"Epoch {epoch} at Step: {i+1}/{steps_per_epoch}")
@@ -177,28 +178,34 @@ class TrainTransformer:
                     trian_loss_per_epoch += loss.item()
 
                     # save losses per step
-                    self.training_losses['loss'].append(loss.item())
+                    self.training_losses['total_loss'].append(loss.item())
             
             # save progress per epoch
-            end_time = time.time()
-            duration = timedelta(seconds=end_time-start_time)
-            print(f'Training took {duration} seconds in total for now')
+
             self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
-            self.training_losses['time'].append(duration)
 
-            model_path = os.path.join(
-                self.transformer_path,
-                f"transformer_epoch_{epoch+1}.pth"
-                )
-            
-            loss_path = os.path.join(
-                self.transformer_path,
-                f"transformer_losses_epoch_{epoch+1}.pkl"
-                )
+            if epoch % 5 == 0:
+                
+                end_time = time.time()
+                duration = timedelta(seconds=end_time-start_time)
+                print(f'Training took {duration} seconds in total for now')
+                self.training_losses['time'].append(duration)
 
-            
-            torch.save(self.transformer.state_dict(), model_path)
-            save_to_pkl(self.training_losses, loss_path)
+
+
+                model_path = os.path.join(
+                    self.transformer_path,
+                    f"transformer_epoch_{epoch+1}.pth"
+                    )
+                
+                loss_path = os.path.join(
+                    self.transformer_path,
+                    f"transformer_losses_epoch_{epoch+1}.pkl"
+                    )
+
+                
+                torch.save(self.transformer.state_dict(), model_path)
+                save_to_pkl(self.training_losses, loss_path)
 
 
 #%%
@@ -208,6 +215,7 @@ if __name__ == "__main__":
         cfg_transformer = hydra.compose(config_name="transformer")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu") # used for debug
     train_transformer = TrainTransformer(cfg_vqgan, cfg_transformer, device)
     train_transformer.prepare_training(clear_all=True)
     train_transformer.train()

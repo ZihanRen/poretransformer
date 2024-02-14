@@ -122,9 +122,9 @@ class TrainVQGAN:
         
         os.makedirs(self.PATH, 
                     exist_ok=True)
-        if not self.cfg.train.load_model:
-            # clear all previous files in this folder starting from new models
-            remove_all_files_in_directory(self.PATH)
+        # if not self.cfg.train.load_model:
+        #     # clear all previous files in this folder starting from new models
+        #     remove_all_files_in_directory(self.PATH)
         
 
     def train(self):
