@@ -26,8 +26,13 @@ checkpoints:
 # training parameters
 # TODO
 train:
-  epochs: 300
-  batch_size: 20
+  p_keep: 0.9
+  sos_token: 0
+  load_model: False
+  pretrained_transformer_epoch: -1
+  pretrained_vqgan_epoch: 10 # identify which VQGAN to use for sampling
+  batch_size: 20 #TODO
+  epochs: 10
   learning_rate: 0.0005 #TODO check - learning rate for vqgan
   betas: [0.99,0.999] # learning rate for discriminator
   weight_decay: 0.8
