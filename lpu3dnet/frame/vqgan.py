@@ -171,7 +171,7 @@ class VQGAN(nn.Module):
 
 
 if __name__ == "__main__":
-    experiment_idx = 6
+    experiment_idx = 7
     @hydra.main(
     config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
     config_name="vqgan",

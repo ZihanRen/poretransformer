@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     ## do some testing
     # input latent vector
-    a = torch.randn(20,latent_dim,2,2,2)
+    a = torch.randn(20,latent_dim,3,3,3)
     z_qt, loss, info = cod(a)
     indices = info[2]
     z_test = cod.get_codebook_entry(indices,a) # z_test should be the same as z_qt

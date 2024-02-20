@@ -61,7 +61,7 @@ class TrainTransformer:
 
             PATH_model = os.path.join(
                 self.transformer_path,
-                f'transformer_epoch_{self.pretrained_model_epoch}.pth'
+                f'transformer_epoch_{self.pretrained_transformer_epoch}.pth'
                 )
             
             self.transformer.load_state_dict(
@@ -129,6 +129,8 @@ class TrainTransformer:
 
         for epoch in range(self.cfg_transformer.train.epochs):
 
+            if self.cfg_transformer.train.load_model:
+                epoch += self.pretrained_transformer_epoch
             trian_loss_per_epoch = 0
 
             with tqdm(
@@ -195,12 +197,12 @@ class TrainTransformer:
 
                 model_path = os.path.join(
                     self.transformer_path,
-                    f"transformer_epoch_{epoch+1}.pth"
+                    f"transformer_epoch_{epoch}.pth"
                     )
                 
                 loss_path = os.path.join(
                     self.transformer_path,
-                    f"transformer_losses_epoch_{epoch+1}.pkl"
+                    f"transformer_losses_epoch_{epoch}.pkl"
                     )
 
                 

@@ -15,9 +15,22 @@ class Decoder(nn.Module):
         
         super(Decoder, self).__init__()
         # resolution = 2
-
         in_channels = channels[0]
-        layers = [nn.Conv3d(latent_dim, in_channels, 3, 1, 1),
+
+        # upsample 3 cubic feature vector to 4 - experiment after 6
+        self.preprocess_layer = nn.ConvTranspose3d(
+            latent_dim,
+            in_channels,
+            kernel_size=2,
+            stride=2,
+            padding=1,
+            output_padding=0,
+            dilation=1
+            )
+
+        # self.preprocess_layer = nn.Conv3d(latent_dim, in_channels, 3, 1, 1)
+
+        layers = [self.preprocess_layer,
                   ResidualBlock(in_channels, in_channels,num_groups=num_groups),
                   ResidualBlock(in_channels, in_channels,num_groups=num_groups)]
 
@@ -48,5 +61,5 @@ if __name__ == "__main__":
                   3,
                   [512, 256, 256, 64, 16, 16])
     print( 'The architecture is'+'\n{}'.format(
-        summary(enc,(20,256,4,4,4)) 
+        summary(enc,(20,256,3,3,3)) 
         ))

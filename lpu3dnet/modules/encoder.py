@@ -33,7 +33,13 @@ class Encoder(nn.Module):
         layers.append(ResidualBlock(channels[-1], channels[-1],num_groups))
         layers.append(GroupNorm(channels=channels[-1],num_groups=num_groups))
         layers.append(Swish())
-        layers.append(nn.Conv3d(channels[-1], latent_dim, 3, 1, 1))
+
+        # experiment 1-6
+        # layers.append(nn.Conv3d(channels[-1], latent_dim, 3, 1, 1))
+        
+        # experiment 7
+        layers.append(nn.Conv3d(channels[-1], latent_dim, kernel_size=3, stride=2, dilation=1,padding=2))  # Adjust kernel size, stride, or padding as necessary
+        self.model = nn.Sequential(*layers)
         self.model = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -42,6 +48,7 @@ class Encoder(nn.Module):
 
 # test
 if __name__ == "__main__":
+    
     enc = Encoder(1,256,16,2,[16,32,128,256,512])
     print( 'The architecture is'+'\n{}'.format(
         summary(enc,(20,1,64,64,64)) 
