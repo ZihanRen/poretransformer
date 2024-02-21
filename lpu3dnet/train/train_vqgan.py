@@ -94,7 +94,7 @@ class TrainVQGAN:
 
         return opt_vq, opt_disc
 
-    def prepare_training(self):
+    def prepare_training(self,removed_files=False):
 
         # initialize object to track training losses
         self.training_losses['q_loss'] = []
@@ -122,9 +122,9 @@ class TrainVQGAN:
         
         os.makedirs(self.PATH, 
                     exist_ok=True)
-        # if not self.cfg.train.load_model:
-        #     # clear all previous files in this folder starting from new models
-        #     remove_all_files_in_directory(self.PATH)
+        if removed_files:
+            # clear all previous files in this folder starting from new models
+            remove_all_files_in_directory(self.PATH)
         
 
     def train(self):
@@ -341,7 +341,7 @@ class TrainVQGAN:
 if __name__ == "__main__":
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    exp = 6
+    exp = 7
 
     @hydra.main(
         config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{exp}",
@@ -349,7 +349,7 @@ if __name__ == "__main__":
         version_base='1.2')
     def main(cfg):
         train = TrainVQGAN(device=device,cfg=cfg)
-        train.prepare_training()
+        train.prepare_training(removed_files=True)
         train.train_nogan()
 
     main()

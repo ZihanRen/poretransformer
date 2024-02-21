@@ -25,7 +25,8 @@ class VQGAN(nn.Module):
             latent_dim=cfg.architecture.encoder.latent_dim,
             num_groups=cfg.architecture.encoder.num_groups,
             num_res_blocks=cfg.architecture.encoder.num_res_blocks,
-            channels=cfg.architecture.encoder.channels
+            channels=cfg.architecture.encoder.channels,
+            decrease_features=cfg.architecture.encoder.decrease_features
         )
 
         self.decoder = decoder.Decoder(
@@ -33,7 +34,8 @@ class VQGAN(nn.Module):
             latent_dim=cfg.architecture.decoder.latent_dim,
             num_groups=cfg.architecture.decoder.num_groups,
             num_res_blocks=cfg.architecture.decoder.num_res_blocks,
-            channels=cfg.architecture.decoder.channels
+            channels=cfg.architecture.decoder.channels,
+            decrease_features=cfg.architecture.decoder.decrease_features
         )
         pretrained_codebook = None
         

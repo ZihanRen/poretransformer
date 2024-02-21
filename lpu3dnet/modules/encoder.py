@@ -9,7 +9,8 @@ class Encoder(nn.Module):
             latent_dim,
             num_groups,
             num_res_blocks,
-            channels
+            channels,
+            decrease_features
             ):
         super(Encoder, self).__init__()
         # compress high dimensional 3D tensor to low dimensional 3D tensor (256,2,2,2)
@@ -34,12 +35,17 @@ class Encoder(nn.Module):
         layers.append(GroupNorm(channels=channels[-1],num_groups=num_groups))
         layers.append(Swish())
 
-        # experiment 1-6
-        # layers.append(nn.Conv3d(channels[-1], latent_dim, 3, 1, 1))
+        # decide whether to decrease feature num from 4 -> 3
+        if decrease_features:
+            layers.append(
+                nn.Conv3d(channels[-1], latent_dim, kernel_size=3, stride=2, dilation=1,padding=2)
+                          )
+        else:
+            layers.append(
+                nn.Conv3d(channels[-1], latent_dim, 3, 1, 1)
+                )
         
         # experiment 7
-        layers.append(nn.Conv3d(channels[-1], latent_dim, kernel_size=3, stride=2, dilation=1,padding=2))  # Adjust kernel size, stride, or padding as necessary
-        self.model = nn.Sequential(*layers)
         self.model = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -49,7 +55,7 @@ class Encoder(nn.Module):
 # test
 if __name__ == "__main__":
     
-    enc = Encoder(1,256,16,2,[16,32,128,256,512])
+    enc = Encoder(1,256,16,2,[16,32,128,256,512],decrease_features=True)
     print( 'The architecture is'+'\n{}'.format(
         summary(enc,(20,1,64,64,64)) 
         ))

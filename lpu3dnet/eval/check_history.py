@@ -198,8 +198,8 @@ min_value = 0
 max_value = 7900
 ct_idx = 0
 test_idx = 1
-start_epoch = 6
-end_epoch = 261
+start_epoch = 0
+end_epoch = 55
 
 from cpgan.ooppnm import img_process
 img_prc = img_process.Image_process()
@@ -213,9 +213,6 @@ val_loss = []
 epoch_list = []
 test_loss = []
 transformer_path = os.path.join(root_path, 'transformer')
-
-start_epoch = 6
-end_epoch = 261
 
 PATH_model = os.path.join(root_path,f'vqgan_epoch_10.pth')
 model_vqgan = load_vqgan(PATH_model,cfg_vqgan,device)

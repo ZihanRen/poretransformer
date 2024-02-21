@@ -10,29 +10,34 @@ class Decoder(nn.Module):
                  latent_dim,
                  num_groups,
                  num_res_blocks,
-                channels
+                channels,
+                decrease_features
                  ):
         
         super(Decoder, self).__init__()
         # resolution = 2
         in_channels = channels[0]
 
-        # upsample 3 cubic feature vector to 4 - experiment after 6
-        self.preprocess_layer = nn.ConvTranspose3d(
-            latent_dim,
-            in_channels,
-            kernel_size=2,
-            stride=2,
-            padding=1,
-            output_padding=0,
-            dilation=1
-            )
-
-        # self.preprocess_layer = nn.Conv3d(latent_dim, in_channels, 3, 1, 1)
-
-        layers = [self.preprocess_layer,
-                  ResidualBlock(in_channels, in_channels,num_groups=num_groups),
-                  ResidualBlock(in_channels, in_channels,num_groups=num_groups)]
+        if decrease_features:
+            layers = [
+                nn.ConvTranspose3d(
+                latent_dim,
+                in_channels,
+                kernel_size=2,
+                stride=2,
+                padding=1,
+                output_padding=0,
+                dilation=1
+                ),
+                ResidualBlock(in_channels, in_channels,num_groups=num_groups),
+                ResidualBlock(in_channels, in_channels,num_groups=num_groups)
+            ]
+        else:
+            layers = [
+                nn.Conv3d(latent_dim, in_channels, 3, 1, 1),
+                ResidualBlock(in_channels, in_channels,num_groups=num_groups),
+                ResidualBlock(in_channels, in_channels,num_groups=num_groups)
+                      ]
 
         for i in range(len(channels)):
             out_channels = channels[i]
@@ -59,7 +64,8 @@ if __name__ == "__main__":
                   256,
                   16,
                   3,
-                  [512, 256, 256, 64, 16, 16])
+                  [512, 256, 256, 64, 16, 16],
+                  decrease_features=True)
     print( 'The architecture is'+'\n{}'.format(
         summary(enc,(20,256,3,3,3)) 
         ))

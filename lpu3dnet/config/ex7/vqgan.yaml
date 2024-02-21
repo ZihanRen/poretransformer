@@ -16,6 +16,7 @@ architecture:
     # reduce from 64->2: 64/(2^5) = 2
     # if you want to have a codebook size of 4^3, reduce to 256 or reduce one more layer after 16  
     channels: [16,64,128,256,512]
+    decrease_features: true
   
   codebook:
     # codebook size
@@ -44,6 +45,7 @@ architecture:
     num_groups: 16
     # 2->4->8->16->32->64 (no upsampling for last layer & first layer)
     channels: [512, 256, 256, 64, 16, 16]
+    decrease_features: true
 
   discriminator:
     img_channels: 1
