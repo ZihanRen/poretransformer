@@ -65,7 +65,7 @@ checkpoints:
 
 # training parameters
 train:
-  epochs: 300
+  epochs: 100
   batch_size: 20
   lr_vqgan: 0.0005 #TODO check - learning rate for vqgan
   lr_disc: 0.0001 # learning rate for discriminator
@@ -75,7 +75,7 @@ train:
   disc_start: 1000 # steps before starting discriminator
   # consider making w_embed dynamic adjusted by steps
   w_embed: 0.02 # weight of embedding loss weight*q_loss + (1-weight)*rec_loss; >0.5 -- larger weight on q loss
-  codebook_weight_increase_per_epoch: 0.02 # increase codebook weight by this amount per epoch until reaching to 1
+  codebook_weight_increase_per_epoch: 0.2 # increase codebook weight by this amount per epoch until reaching to 1
   drop_last: true # whether to drop last batch if it is smaller than batch_size
   g_lambda: 10 # weight of gradient penalty
   max_weight_q_loss: 2 # maximum weight of q loss
