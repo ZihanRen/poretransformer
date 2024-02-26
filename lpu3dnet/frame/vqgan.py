@@ -88,6 +88,12 @@ class VQGAN(nn.Module):
         
         return codebook_mapping, (perplexity,min_encodings,codebook_indices), q_loss
 
+    def l2_reg(self):
+        l2_reg = 0
+        for param in self.parameters():
+            l2_reg += torch.norm(param,2)
+        return l2_reg
+
     def freeze_encoder(self):
         for param in self.encoder.parameters():
             param.requires_grad = False

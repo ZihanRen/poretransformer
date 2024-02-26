@@ -106,6 +106,7 @@ class TrainVQGAN:
         self.training_losses['perplexity'] = []
         self.training_losses['time'] = []
         self.training_losses['gp'] = []
+        self.training_losses['l2_loss'] = []
 
         def remove_all_files_in_directory(directory):
             """Removes all files in the specified directory."""
@@ -227,6 +228,7 @@ class TrainVQGAN:
                     self.training_losses['g_loss'].append(g_loss.item())
                     self.training_losses['total_loss'].append(train_loss.item())
                     self.training_losses['perplexity'].append(perplexity.item())
+                    self.training_losses['l2_loss'].append(self.vqgan.l2_reg().item())
             
             # save progress per epoch
             end_time = time.time()
@@ -301,6 +303,9 @@ class TrainVQGAN:
                     weight_q_loss = min(weight_increase_per_step * (epoch*steps_per_epoch+i),self.max_weight_q_loss)
                     q_loss = weight_q_loss * q_loss
 
+                    # # add L2 regularization to the codebook
+                    # l2_reg = self.vqgan.l2_reg()
+                    # l2_loss = self.cfg.train.l2_reg_weight * l2_reg
                     vq_loss =  q_loss + rec_loss
                     
                     self.opt_vq.zero_grad()
@@ -320,6 +325,7 @@ class TrainVQGAN:
                         self.training_losses['q_loss'].append(q_loss)
                     
                     self.training_losses['rec_loss'].append(rec_loss.item())
+                    # self.training_losses['l2_loss'].append(l2_loss.item())
                     self.training_losses['total_loss'].append(train_loss.item())
                     if not self.cfg.architecture.codebook.autoencoder:
                         self.training_losses['perplexity'].append(perplexity.item())

@@ -81,3 +81,4 @@ train:
   max_weight_q_loss: 2 # maximum weight of q loss
   load_model: false
   pretrained_model_epoch: None
+  l2_reg_weight: 0.0001
