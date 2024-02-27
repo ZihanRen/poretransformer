@@ -79,7 +79,7 @@ max_value = 7900
 ct_idx = 0
 test_idx = 1
 start_epoch = 0
-end_epoch = 60
+end_epoch = 35
 
 from cpgan.ooppnm import img_process
 img_prc = img_process.Image_process()
