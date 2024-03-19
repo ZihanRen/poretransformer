@@ -49,7 +49,7 @@ def delete_files_in_directory(directory_path):
     else:
         print(f"'{directory_path}' is not a valid directory")
 
-initialize(config_path=f"../config/ex1")
+initialize(config_path=f"../config/ex7")
 cfg = compose(config_name="vqgan")
 
 #%% load large image
@@ -69,8 +69,9 @@ for i in range(0,6):
 #%% find the optimal image interval for sub-sampling
 
 im_size = 636
-crop_s = 64
-img_interval = 28
+crop_s = 128
+# set a redundant number
+img_interval = 15
 
 def output_img_num(im_size,crop_s,img_interval):
     img_num_one_side = ( ((im_size - 1)  - crop_s) / img_interval )
@@ -89,7 +90,7 @@ img_one,_ = output_img_num(im_size,crop_s,img_interval)
 def crop_by_idx(img_list,crop_s,img_interval,ct_idx):
     
     save_PATH = os.path.join(
-        cfg.data.PATH.sub_vol,
+        cfg.data.PATH.sub_vol_large,
         'ct_{}'.format(ct_idx)
         )
     
