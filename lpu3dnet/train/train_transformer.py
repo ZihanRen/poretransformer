@@ -116,7 +116,7 @@ class TrainTransformer:
         start_time = time.time()
         # using the same dataloader as VQGAN training process
         train_dataset = dataset_vqgan.Dataset_vqgan(self.cfg_vqgan)
-
+        
         
         train_data_loader = DataLoader(
                             train_dataset,

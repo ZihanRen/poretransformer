@@ -15,14 +15,16 @@ from lpu3dnet.modules.components import *
 class GPTConfig:
     block_size: int = (2**3) * 64 # number of feature vectors per meta image * number of meta images
     vocab_size: int = 3000 # codebook size of vqvae
-    n_layer: int = 8
-    n_head: int = 8  # number of attention heads
-    n_embd: int = 256 # 12*90. Each attention head has 90 dimensions
+    n_layer: int = 12
+    n_head: int = 12  # number of attention heads
+    n_embd: int = 1080 # 12*90. Each attention head has 90 dimensions
     dropout: float = 0.0
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
-    cond_dim: int = 1+3  # number of conditional features - phi + ijk
-    cond_embd: int = 50  
-    tokens_embd: int = 256  # number of features in the meta image
+    n_embd_ijk: int = 10 # ijk embedding size
+    n_embd_phi: int = 5 # porosity embedding size
+    n_emd_all: int = n_embd + n_embd_ijk + n_embd_phi # total embedding size
+
+
 
 class CausalSelfAttention(nn.Module):
 
@@ -111,19 +113,21 @@ class GPT(nn.Module):
         assert config.vocab_size is not None
         assert config.block_size is not None
         self.config = config
+        self.initial_projection = nn.Linear(config.n_embd + config.n_embd_ijk + config.n_embd_phi, config.n_embd)
 
         self.transformer = nn.ModuleDict(dict(
-            wte = nn.Embedding(config.vocab_size, config.tokens_embd),
-            wpe = nn.Embedding(config.block_size, config.tokens_embd),
+            wte = nn.Embedding(config.vocab_size, config.n_embd),
+            wpe = nn.Embedding(config.block_size, config.n_embd),
             drop = nn.Dropout(config.dropout),
-            cond_proj = nn.Linear(config.cond_dim, config.cond_embd),
             h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
             ln_f = LayerNorm(config.n_embd, bias=config.bias),
         ))
 
-        self.attn_start = nn.Linear(config.cond_embd + config.tokens_embd, config.n_embd)
-
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+
+        self.ijk_linear = nn.Linear(3, config.n_embd_ijk) # for one image, there will be 3 values - ijk
+        self.porosity_linear = nn.Linear(1, config.n_embd_phi) # for one image, there will be 1 value - porosity
+
         self.transformer.wte.weight = self.lm_head.weight # https://paperswithcode.com/method/weight-tying
 
         # init all weights
@@ -156,25 +160,25 @@ class GPT(nn.Module):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(self, idx, cond,inference=False):
+    def forward(self, idx, cond1, cond2):
         device = idx.device
-        b, t = idx.shape  # batch size, total sequence length
-        num_patches = cond.size(1)
-        seq_per_patch = t // num_patches  # Calculate tokens per patch
+        b, t = idx.shape  # b: batch size, t: total sequence length (seq_len * num_patches)
+        seq_per_patch = t // cond1.size(1)  # Assuming uniform distribution of tokens per patch
 
-        # Token and positional embeddings
-        tok_emb = self.transformer.wte(idx)
+        # Embed tokens and positions
+        tok_emb = self.transformer.wte(idx)  # Token embeddings: shape [b, t, emb_dim]
         pos = torch.arange(0, t, dtype=torch.long, device=device)
-        pos_emb = self.transformer.wpe(pos)
-        all_emb = tok_emb + pos_emb
+        pos_emb = self.transformer.wpe(pos)[None, :, :]  # Position embeddings: shape [1, t, emb_dim], expanded to [b, t, emb_dim]
 
-        # conditional vectors integration
-        cond_rep = cond.repeat(1, 1, seq_per_patch).view(b, -1, cond.size(-1))  # Replicate and reshape: [batch, t, features_num]
-        cond_rep = self.transformer.cond_proj(cond_rep)
+        # Transform and replicate conditional vectors to match sequence length
+        cond1_rep = cond1.repeat(1, 1, seq_per_patch).view(b, -1, 1)  # Replicate and reshape: shape [b, t, 1]
+        cond2_rep = cond2.repeat(1, 1, seq_per_patch).view(b, -1, 1)  # Replicate and reshape: shape [b, t, 1]
 
-        # Concatenate everything and project to model dimension
-        x = torch.cat((all_emb, cond_rep), dim=-1)
-        x = self.attn_start(x)
+        # Concatenate all embeddings
+        x = torch.cat((tok_emb, pos_emb, cond1_rep, cond2_rep), dim=-1)  # shape [b, t, emb_dim + 2]
+
+        # Project concatenated embeddings to the model's internal dimension if necessary
+        x = self.initial_projection(x) if hasattr(self, 'initial_projection') else x
 
         # Transformer processing
         x = self.transformer.drop(x)
@@ -182,13 +186,9 @@ class GPT(nn.Module):
             x = block(x)
         x = self.transformer.ln_f(x)
 
-                
-        if inference:
-            logits = self.lm_head(x[:, [-1], :]) # only predict the next tokens
-        else:
-            logits = self.lm_head(x)
+        # Output projection to vocabulary size
+        logits = self.lm_head(x)  # shape [b, t, vocab_size]
 
-        print(logits.shape)
         return logits
 
     def estimate_mfu(self, fwdbwd_per_iter, dt):
@@ -212,11 +212,8 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config = GPTConfig()
     gpt = GPT(config).to(device)
-    b = 10
-    seq_len = int(27*8)
-    cond_dim = 4
-    patch_num = 8
-
-    idx = torch.randint(0, 3000, (10, seq_len)).to(device)
-    cond_info = torch.rand(b,patch_num,cond_dim).to(device).float()
-    c = gpt(idx, cond_info,inference=False)
+    idx = torch.randint(0, 3000, (10,8,27)).to(device) # 8 patches of 512 tokens for 10 batches
+    ijk = torch.randint(0, 3, (10,8,3)).to(device).float() # generate integer data ijk - 0-2
+    # generate float data phi - 0.1-0.2
+    phi = torch.rand(10,8,1).to(device) * 0.1 + 0.1
+    c, loss = gpt(idx, ijk, phi, targets=idx)

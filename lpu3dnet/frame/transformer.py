@@ -21,9 +21,12 @@ class Transformer(nn.Module):
         )
 
 
-    def forward(self, x, target=None):
-        logits, loss = self.model(x, target)
-        return logits, loss
+    def forward(self, idx, cond, inference=False):
+        logits = self.model(idx,cond, inference=inference)
+        return logits
+
+    def loss_func(self, logits, target):
+        return F.cross_entropy(logits.view(-1, logits.size(-1)), target.view(-1),ignore_index=-1)
 
     @torch.no_grad()
     def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
@@ -98,7 +101,7 @@ class Transformer(nn.Module):
 
 # test the module
 if __name__ == "__main__":
-    experiment_idx = 6
+    experiment_idx = 7
     @hydra.main(
     config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
     config_name="transformer",
@@ -108,14 +111,20 @@ if __name__ == "__main__":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # print(OmegaConf.to_yaml(cfg))
         transformer_obj = Transformer(cfg).to(device)
-        x = torch.randint(0,3000,(10,512)).to(device)  
-        target = torch.randint(0,3000,(10,512)).to(device)
-        logits, loss = transformer_obj(x, target)
+        b = 10
+        seq_len = int(27*8)
+        cond_dim = 4
+        patch_num = 8
 
+        idx = torch.randint(0, 3000, (10, seq_len)).to(device)
+        cond_info = torch.rand(b,patch_num,cond_dim).to(device).float()
         opt = transformer_obj.configure_optimizers(device)
+        logits = transformer_obj(idx,cond_info)
+        loss = transformer_obj.loss_func(logits, idx)
+        print(logits.shape)
+        print(loss)
         print(opt)
 
-        # x = torch.randint(0,3000,(10,512)).to(device)
         # idx = transformer_obj.generate(x, 1000, 1.0, 10)
         # print(idx.shape)
 

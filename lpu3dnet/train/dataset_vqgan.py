@@ -61,10 +61,10 @@ class Dataset_vqgan(Dataset):
 
 
 if __name__ == "__main__":
-  experiment_idx = 2
+  experiment_idx = 7
 
   @hydra.main(
-    config_path=f"/journel/s0/zur74/test/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
+    config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
     config_name="vqgan",
     version_base='1.2')
   def main(cfg):
