@@ -14,8 +14,8 @@ class Dataset_vqgan(Dataset):
       ):
     # ct_idx: subvolumes that are sampled from main volume ct idx
 
-    self.root_PATH = cfg.data.PATH.sub_vol
-    self.ct_idx = cfg.data.ct_idx
+    self.root_PATH = cfg.PATH.sub_vol
+    self.ct_idx = cfg.ct_idx
     self.transform = None
 
     # get training data PATH
@@ -59,13 +59,13 @@ class Dataset_vqgan(Dataset):
       print("training CT index is {}".format(self.ct_idx))
       print("training data root path is {}".format(self.root_PATH))
 
-
+0
 if __name__ == "__main__":
   experiment_idx = 7
 
   @hydra.main(
     config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
-    config_name="vqgan",
+    config_name="dataset",
     version_base='1.2')
   def main(cfg):
 

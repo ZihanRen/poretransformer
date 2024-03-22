@@ -11,13 +11,6 @@ class VQGAN(nn.Module):
     def __init__(self,cfg):
         super(VQGAN, self).__init__()
         self.cfg = cfg
-        self.save_path = os.path.join(
-            self.cfg.checkpoints.PATH,
-            self.cfg.experiment
-            )
-        
-        os.makedirs(self.save_path, 
-                    exist_ok=True)
 
 
         self.encoder = encoder.Encoder(
@@ -170,12 +163,8 @@ class VQGAN(nn.Module):
     def load_checkpoint(self, path):
         self.load_state_dict(torch.load(path))
 
-    def save_checkpoint(self,epoch):
-        save_model_path = os.path.join(     
-            self.save_path,
-            f'vqgan_epoch_{epoch}.pth'
-            )
-        torch.save(self.state_dict(), save_model_path)
+    def save_checkpoint(self,path):
+        torch.save(self.state_dict(), path)
 
 
 if __name__ == "__main__":

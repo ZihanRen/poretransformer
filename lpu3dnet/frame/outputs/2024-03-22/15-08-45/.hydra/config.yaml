@@ -1,0 +1,37 @@
+Project: config_transformer
+experiment: ex7
+architecture:
+  block_size: 216
+  vocab_size: 3001
+  n_layer: 12
+  n_head: 8
+  n_embd: 256
+  dropout: 0.01
+  bias: true
+  cond_dim: 4
+  cond_embd: 10
+  tokens_embd: 256
+data:
+  PATH:
+    main_vol: /journel/s0/zur74/data/new_energy_well/train_vol/main_vol
+    sub_vol: /journel/s0/zur74/data/new_energy_well/train_vol/sub_vol
+  ct_idx:
+  - 2
+  - 3
+  - 4
+  - 5
+checkpoints:
+  PATH: /journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/train/checkpoints
+train:
+  p_keep: 0.9
+  sos_token: 3000
+  load_model: false
+  pretrained_transformer_epoch: -2
+  pretrained_vqgan_epoch: 10
+  batch_size: 50
+  epochs: 60
+  learning_rate: 0.0003
+  betas:
+  - 0.99
+  - 0.999
+  weight_decay: 0.01

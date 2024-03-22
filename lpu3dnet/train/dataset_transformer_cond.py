@@ -11,24 +11,26 @@ from lpu3dnet.frame import vqgan
 
 
 
-class Dataset_vqgan(Dataset):
+class Dataset_transformer(Dataset):
     def __init__(
         self,
         cfg_vqgan,
         cfg_transformer,
+        cfg_dataset,
         device
     ):
         # cfg: configuration of VQGAN
-        self.root_PATH = cfg_vqgan.data.PATH.sub_vol_large
-        self.ct_idx = cfg_vqgan.data.ct_idx
+        self.root_PATH = cfg_dataset.PATH.sub_vol_large
+        self.ct_idx = cfg_dataset.ct_idx
         self.transform = None
         self.device = device
 
+        # decide which VQGAN model to use to encode image patches
         self.pretrained_vqgan_epoch = cfg_transformer.train.pretrained_vqgan_epoch
-
+        # load corresponding VQGAN model
         self.vqgan_path = os.path.join(
-            cfg_transformer.checkpoints.PATH,
-            cfg_transformer.experiment
+            cfg_dataset.checkpoints.PATH,
+            cfg_dataset.experiment
             )
 
         # initialize VQGAN model
@@ -68,7 +70,7 @@ class Dataset_vqgan(Dataset):
 
     def __getitem__(self, index):
         # load images
-        image = Dataset_vqgan.tif_to_np(self.img_PATH[index])
+        image = Dataset_transformer.tif_to_np(self.img_PATH[index])
 
         # segment images into 64^3 cubic voxels in 2*2*2 spatial grid
         tokens_patch_list = []
@@ -84,7 +86,8 @@ class Dataset_vqgan(Dataset):
                     phi_list.append(ps.metrics.porosity(subset_image))
                     subset_image = np.expand_dims(subset_image, axis=(0,1))
                     subset_image = torch.from_numpy(subset_image).float().to(self.device)
-                    subset_tokens = self.get_img_tokens(subset_image)
+                    with torch.no_grad():
+                        subset_tokens = self.get_img_tokens(subset_image)
                     tokens_patch_list.append(subset_tokens)
                     i_list.append(i)
                     j_list.append(j)
@@ -99,7 +102,7 @@ class Dataset_vqgan(Dataset):
         # concatenate all the conditional information
         cond = torch.cat([phi_tensor,i_tensor,j_tensor,k_tensor], dim=1)
 
-        return tokens_all[0],cond
+        return tokens_all[0],cond.float()
 
     def img_name(self):
         return os.listdir(self.img_PATH)
@@ -116,10 +119,11 @@ if __name__ == "__main__":
     with hydra.initialize(config_path=f"../config/ex{experiment_idx}"):
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_transformer = hydra.compose(config_name="transformer")
+        cfg_dataset = hydra.compose(config_name="dataset")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = 'cpu'
-    data_vqgan = Dataset_vqgan(cfg_vqgan,cfg_transformer,device)
+    data_vqgan = Dataset_transformer(cfg_vqgan,cfg_transformer,cfg_dataset,device)
     data_vqgan.print_parameters()
 
     print("Total number of training data samples is {}".format(len(data_vqgan)))

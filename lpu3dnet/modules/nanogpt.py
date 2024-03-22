@@ -167,9 +167,11 @@ class GPT(nn.Module):
         pos = torch.arange(0, t, dtype=torch.long, device=device)
         pos_emb = self.transformer.wpe(pos)
         all_emb = tok_emb + pos_emb
+        print(f'all emb shape: {all_emb.shape}')
 
         # conditional vectors integration
         cond_rep = cond.repeat(1, 1, seq_per_patch).view(b, -1, cond.size(-1))  # Replicate and reshape: [batch, t, features_num]
+        print(f'cond rep dtype: {cond_rep.dtype}')
         cond_rep = self.transformer.cond_proj(cond_rep)
 
         # Concatenate everything and project to model dimension
@@ -182,13 +184,12 @@ class GPT(nn.Module):
             x = block(x)
         x = self.transformer.ln_f(x)
 
-                
+        
         if inference:
             logits = self.lm_head(x[:, [-1], :]) # only predict the next tokens
         else:
             logits = self.lm_head(x)
 
-        print(logits.shape)
         return logits
 
     def estimate_mfu(self, fwdbwd_per_iter, dt):
@@ -206,7 +207,63 @@ class GPT(nn.Module):
         flops_promised = 312e12 # A100 GPU bfloat16 peak flops is 312 TFLOPS
         mfu = flops_achieved / flops_promised
         return mfu
+    
+    @torch.no_grad()
+    def generate(self, idx, cond, max_new_tokens, temperature=1.0, top_k=None):
+        b, num_patches, cond_dim = cond.shape
+        seq_per_patch = 27  # Number of tokens corresponding to each image patch
 
+        self.eval()  # Ensure the model is in evaluation mode to disable dropout
+
+        for _ in range(max_new_tokens):
+            # Determine the conditional vectors for each segment of the sequence based on its length
+            seq_length = idx.size(1)  # Current total sequence length including generated tokens
+            extended_cond = torch.zeros(
+                (b, seq_length, cond_dim),
+                device=idx.device
+                )
+            
+            # Fill in the conditional information for each segment
+            for i in range(num_patches):
+                start_idx = i * seq_per_patch
+                end_idx = start_idx + seq_per_patch
+                # Use min to ensure we don't go beyond the current sequence length
+                end_idx = min(end_idx, seq_length)
+                if start_idx < seq_length:
+                    extended_cond[:, start_idx:end_idx, :] = cond[:, i, :].unsqueeze(1).repeat(1, end_idx - start_idx, 1)
+                else:
+                    break  # Exit the loop if we've covered the entire sequence length
+            # Project conditional vectors
+            cond_proj = self.transformer.cond_proj(extended_cond)
+            
+
+            # Obtain the latest token embeddings and positional embeddings
+            tok_emb = self.transformer.wte(idx)
+            pos = torch.arange(
+                0,
+                idx.size(1),
+                dtype=torch.long,
+                device=idx.device
+                )
+            pos_emb = self.transformer.wpe(pos)
+            # Combine token embeddings, positional embeddings, and projected conditional vectors
+            x = torch.cat((tok_emb + pos_emb, cond_proj), dim=-1)
+            x = self.attn_start(x)
+
+            for block in self.transformer.h:
+                x = block(x)
+            x = self.transformer.ln_f(x)
+            logits = self.lm_head(x)
+
+            # Sample the next token
+            logits = logits[:, -1, :] / temperature  # Apply temperature scaling
+            if top_k is not None:
+                logits = self.top_k_logits(logits, top_k)
+            probs = F.softmax(logits, dim=-1)
+            idx_next = torch.multinomial(probs, num_samples=1)
+            idx = torch.cat((idx, idx_next), dim=1)  # Append the sampled token to the sequence
+
+        return idx
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -220,3 +277,14 @@ if __name__ == "__main__":
     idx = torch.randint(0, 3000, (10, seq_len)).to(device)
     cond_info = torch.rand(b,patch_num,cond_dim).to(device).float()
     c = gpt(idx, cond_info,inference=False)
+
+    # autoregressive generation
+    idx = torch.randint(0, 3000, (10, 18)).to(device)
+    new_tokens = gpt.generate(
+        idx,
+        cond_info,
+        max_new_tokens=30,
+        temperature=1.0,
+        top_k=None
+        )
+    print(new_tokens.shape)

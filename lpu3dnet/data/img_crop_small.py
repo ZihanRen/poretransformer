@@ -50,14 +50,14 @@ def delete_files_in_directory(directory_path):
         print(f"'{directory_path}' is not a valid directory")
 
 initialize(config_path=f"../config/ex7")
-cfg = compose(config_name="vqgan")
+cfg = compose(config_name="dataset")
 
 #%% load large image
 import math
 img_list = []
 for i in range(0,6):
     PATH = os.path.join(
-        cfg.data.PATH.main_vol,
+        cfg.PATH.main_vol,
         f'main_{i}.tif'
         )
 
@@ -90,7 +90,7 @@ img_one,_ = output_img_num(im_size,crop_s,img_interval)
 def crop_by_idx(img_list,crop_s,img_interval,ct_idx):
     
     save_PATH = os.path.join(
-        cfg.data.PATH.sub_vol_large,
+        cfg.PATH.sub_vol_large,
         'ct_{}'.format(ct_idx)
         )
     

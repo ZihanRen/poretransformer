@@ -1,9 +1,7 @@
 from lpu3dnet.modules import nanogpt
 import torch
 from torch import nn
-from torchinfo import summary
 import hydra
-from omegaconf import OmegaConf
 import os
 from torch.nn import functional as F
 import inspect
@@ -29,32 +27,11 @@ class Transformer(nn.Module):
         return F.cross_entropy(logits.view(-1, logits.size(-1)), target.view(-1),ignore_index=-1)
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
-        """
-        Take a conditioning sequence of indices idx (LongTensor of shape (b,t)) and complete
-        the sequence max_new_tokens times, feeding the predictions back into the model each time.
-        Most likely you'll want to make sure to be in model.eval() mode of operation for this.
-        """
-        for _ in range(max_new_tokens):
-            # if the sequence context is growing too long we must crop it at block_size
-            idx_cond = idx if idx.size(1) <= self.cfg_architecture.block_size else idx[:, -self.cfg_architecture.block_size:]
-            # forward the model to get the logits for the index in the sequence
-            logits, _ = self(idx_cond)
-            # pluck the logits at the final step and scale by desired temperature
-            logits = logits[:, -1, :] / temperature
-            # optionally crop the logits to only the top k options
-            if top_k is not None:
-                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-                logits[logits < v[:, [-1]]] = -float('Inf')
-            # apply softmax to convert logits to (normalized) probabilities
-            probs = F.softmax(logits, dim=-1)
-            # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1)
-            # append sampled index to the running sequence and continue
-            idx = torch.cat((idx, idx_next), dim=1)
+    def generate(self, idx, cond, max_new_tokens, temperature=1.0, top_k=None):
+        self.model.eval()
+        generate_idx = self.model.generate(idx,cond, max_new_tokens, temperature, top_k)
 
-        return idx
-
+        return generate_idx
 
     def configure_optimizers(self,device):
         weight_decay = self.cfg_train.weight_decay
@@ -87,16 +64,11 @@ class Transformer(nn.Module):
 
         return optimizer
 
-
     def load_checkpoint(self, path):
         self.load_state_dict(torch.load(path))
 
-    def save_checkpoint(self,epoch):
-        save_model_path = os.path.join(     
-            self.save_path,
-            f'transformer_epoch_{epoch}.pth'
-            )
-        torch.save(self.state_dict(), save_model_path)
+    def save_checkpoint(self,path):
+        torch.save(self.state_dict(), path)
     
 
 # test the module
@@ -121,13 +93,19 @@ if __name__ == "__main__":
         opt = transformer_obj.configure_optimizers(device)
         logits = transformer_obj(idx,cond_info)
         loss = transformer_obj.loss_func(logits, idx)
-        print(logits.shape)
-        print(loss)
-        print(opt)
+        print(idx.shape)
+        print(cond_info.shape)
 
-        # idx = transformer_obj.generate(x, 1000, 1.0, 10)
-        # print(idx.shape)
+        # generation phase
+        cond_info = torch.rand(b,patch_num,cond_dim).to(device).float()
+        idx = torch.randint(0, 3000, (10, 18)).to(device)
+        new_tokens = transformer_obj.generate(
+            idx,
+            cond_info,
+            max_new_tokens=30,
+            temperature=1.0,
+            top_k=None
+            )
 
-        # print(transformer_obj.model.get_num_params())
     
     main()

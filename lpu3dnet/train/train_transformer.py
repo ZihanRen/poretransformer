@@ -2,7 +2,7 @@
 import torch
 from lpu3dnet.frame import vqgan
 from lpu3dnet.frame import transformer
-from lpu3dnet.train import dataset_vqgan
+from lpu3dnet.train import dataset_transformer_cond
 import os
 from tqdm import tqdm
 from torch.utils.data import DataLoader
@@ -29,18 +29,18 @@ class TrainTransformer:
             self,
             cfg_vqgan,
             cfg_transformer,
+            cfg_dataset,
             device,
             ):
         # use self.cfg mainly on modules - vqgan & transformer
         self.cfg_vqgan = cfg_vqgan
         self.cfg_transformer = cfg_transformer
+        self.cfg_dataset = cfg_dataset
 
         # decompose transformer config
-        self.pretrained_transformer_epoch = self.cfg_transformer.train.pretrained_transformer_epoch
         self.pretrained_vqgan_epoch = self.cfg_transformer.train.pretrained_vqgan_epoch
-        self.root_path = os.path.join(self.cfg_transformer.checkpoints.PATH, self.cfg_transformer.experiment)
+        self.root_path = os.path.join(self.cfg_dataset.checkpoints.PATH, self.cfg_dataset.experiment)
         self.transformer_path = os.path.join(self.root_path, 'transformer')
-
         self.device = device
 
 
@@ -55,23 +55,7 @@ class TrainTransformer:
         # freeze VQGAN parameters
         self.vqgan.eval()
 
-        # model initialization - whether to load model or initialzie the model
-        if self.cfg_transformer.train.load_model:
-            self.transformer = transformer.Transformer(self.cfg_transformer).to(device=self.device)
-
-            PATH_model = os.path.join(
-                self.transformer_path,
-                f'transformer_epoch_{self.pretrained_transformer_epoch}.pth'
-                )
-            
-            self.transformer.load_state_dict(
-                torch.load(
-                        PATH_model,
-                        map_location=torch.device(self.device)
-                        )
-                )
-        else:
-            self.transformer = transformer.Transformer(self.cfg_transformer).to(device=self.device)
+        self.transformer = transformer.Transformer(self.cfg_transformer).to(device=self.device)
         
         # initializew optimizer
         self.opt = self.transformer.configure_optimizers(device=self.device)
@@ -115,12 +99,16 @@ class TrainTransformer:
         print("Training transformer:")
         start_time = time.time()
         # using the same dataloader as VQGAN training process
-        train_dataset = dataset_vqgan.Dataset_vqgan(self.cfg_vqgan)
+        train_dataset = dataset_transformer_cond.Dataset_transformer(
+                        self.cfg_vqgan,
+                        self.cfg_transformer,
+                        self.cfg_dataset,
+                        device=self.device)
         
         
         train_data_loader = DataLoader(
                             train_dataset,
-                            batch_size=self.cfg_transformer.train.batch_size, #TODO: change to cfg
+                            batch_size=self.cfg_transformer.train.batch_size,
                             shuffle=True,
                             drop_last=False
                             )
@@ -129,8 +117,6 @@ class TrainTransformer:
 
         for epoch in range(self.cfg_transformer.train.epochs):
 
-            if self.cfg_transformer.train.load_model:
-                epoch += self.pretrained_transformer_epoch
             trian_loss_per_epoch = 0
 
             with tqdm(
@@ -139,12 +125,8 @@ class TrainTransformer:
                 desc=f"Epoch {epoch + 1}/{self.cfg_transformer.train.epochs}"
                 ) as pbar:
 
-                for i, imgs in enumerate(pbar):
-                    
-                    imgs = imgs.to(device=self.device)
-                    # get sampled image tokens
-                    with torch.no_grad():
-                        img_tokens = self.vqgan.gen_img_tokens(imgs)
+                for i, data_obj in enumerate(pbar):
+                    img_tokens,cond  = data_obj[0], data_obj[1]
                     
                     # train transformer
                     sos_tokens = torch.ones(img_tokens.shape[0], 1) * sos_token
@@ -168,8 +150,12 @@ class TrainTransformer:
                     target = img_tokens
                     perturbed_indices = perturbed_indices[:, :-1]
 
+                    print(perturbed_indices.shape)
+                    print(cond.shape)
+                    print(target.shape) 
+                    logits = self.transformer(idx=perturbed_indices, cond=cond)
+                    loss = self.transformer.loss_func(logits, target)
 
-                    logits, loss = self.transformer(x=perturbed_indices, target=target)
                     self.opt.zero_grad()
                     loss.backward() #TODO: check if this is correct. check the loss is correct or not
                     self.opt.step()
@@ -212,13 +198,14 @@ class TrainTransformer:
 
 #%%
 if __name__ == "__main__":
-    with hydra.initialize(config_path="../config/ex6"):
+    with hydra.initialize(config_path="../config/ex7"):
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_transformer = hydra.compose(config_name="transformer")
+        cfg_dataset = hydra.compose(config_name="dataset")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("cpu") # used for debug
-    train_transformer = TrainTransformer(cfg_vqgan, cfg_transformer, device)
+    train_transformer = TrainTransformer(cfg_vqgan, cfg_transformer,cfg_dataset,device)
     train_transformer.prepare_training(clear_all=True)
     train_transformer.train()
 
