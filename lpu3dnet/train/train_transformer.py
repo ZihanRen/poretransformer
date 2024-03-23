@@ -117,7 +117,7 @@ class TrainTransformer:
 
         for epoch in range(self.cfg_transformer.train.epochs):
 
-            trian_loss_per_epoch = 0
+            train_loss_per_epoch = 0
 
             with tqdm(
                 train_data_loader,
@@ -149,10 +149,6 @@ class TrainTransformer:
 
                     target = img_tokens
                     perturbed_indices = perturbed_indices[:, :-1]
-
-                    print(perturbed_indices.shape)
-                    print(cond.shape)
-                    print(target.shape) 
                     logits = self.transformer(idx=perturbed_indices, cond=cond)
                     loss = self.transformer.loss_func(logits, target)
 
@@ -163,14 +159,14 @@ class TrainTransformer:
                     pbar.set_description(f"Epoch {epoch} at Step: {i+1}/{steps_per_epoch}")
                     pbar.set_postfix(Loss=loss.item())
 
-                    trian_loss_per_epoch += loss.item()
+                    train_loss_per_epoch += loss.item()
 
                     # save losses per step
                     self.training_losses['total_loss'].append(loss.item())
             
             # save progress per epoch
 
-            self.training_losses['total_loss_per_epoch'].append(trian_loss_per_epoch/steps_per_epoch)
+            self.training_losses['total_loss_per_epoch'].append(train_loss_per_epoch/steps_per_epoch)
 
             if epoch % 5 == 0:
                 

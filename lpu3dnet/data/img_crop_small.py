@@ -71,7 +71,7 @@ for i in range(0,6):
 im_size = 636
 crop_s = 128
 # set a redundant number
-img_interval = 15
+img_interval = 25
 
 def output_img_num(im_size,crop_s,img_interval):
     img_num_one_side = ( ((im_size - 1)  - crop_s) / img_interval )
@@ -82,6 +82,12 @@ print( "Total number of subvolume per large volume is {}".format(
     output_img_num(im_size,crop_s,img_interval)[1]
     ) 
     )
+
+print( "Total training subvolume is {}".format(
+    output_img_num(im_size,crop_s,img_interval)[1] * 4
+    ) 
+    )
+
 img_one,_ = output_img_num(im_size,crop_s,img_interval)
 
 
