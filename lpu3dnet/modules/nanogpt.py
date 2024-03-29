@@ -16,13 +16,13 @@ class GPTConfig:
     block_size: int = (2**3) * 64 # number of feature vectors per meta image * number of meta images
     vocab_size: int = 3000 # codebook size of vqvae
     n_layer: int = 8
-    n_head: int = 8  # number of attention heads
-    n_embd: int = 256 # 12*90. Each attention head has 90 dimensions
+    n_head: int = 12  # number of attention heads
+    n_embd: int = 1080 # model dimension initial - 12*90. Each attention head has 90 dimensions
     dropout: float = 0.0
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
     cond_dim: int = 1+3  # number of conditional features - phi + ijk
     cond_embd: int = 50  
-    tokens_embd: int = 256  # number of features in the meta image
+    tokens_embd: int = 256  # embed tokens to certain dimension
 
 class CausalSelfAttention(nn.Module):
 
@@ -122,9 +122,7 @@ class GPT(nn.Module):
         ))
 
         self.attn_start = nn.Linear(config.cond_embd + config.tokens_embd, config.n_embd)
-
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        self.transformer.wte.weight = self.lm_head.weight # https://paperswithcode.com/method/weight-tying
 
         # init all weights
         self.apply(self._init_weights)
@@ -167,11 +165,9 @@ class GPT(nn.Module):
         pos = torch.arange(0, t, dtype=torch.long, device=device)
         pos_emb = self.transformer.wpe(pos)
         all_emb = tok_emb + pos_emb
-        print(f'all emb shape: {all_emb.shape}')
 
         # conditional vectors integration
         cond_rep = cond.repeat(1, 1, seq_per_patch).view(b, -1, cond.size(-1))  # Replicate and reshape: [batch, t, features_num]
-        print(f'cond rep dtype: {cond_rep.dtype}')
         cond_rep = self.transformer.cond_proj(cond_rep)
 
         # Concatenate everything and project to model dimension
@@ -184,7 +180,7 @@ class GPT(nn.Module):
             x = block(x)
         x = self.transformer.ln_f(x)
 
-        
+        # loss function should be claculated only based on next tokens
         if inference:
             logits = self.lm_head(x[:, [-1], :]) # only predict the next tokens
         else:

@@ -5,6 +5,8 @@ from tifffile import imread
 import porespy as ps
 from lpu3dnet.frame import vqgan
 import hydra
+import shutil
+
 
 class ImageTokensGenerator:
     def __init__(self, cfg_vqgan, cfg_transformer, cfg_dataset, device):
@@ -31,19 +33,25 @@ class ImageTokensGenerator:
         self.vqgan.eval()
     
     def empty_folders(self):
-
-        def delete_files_in_directory(directory_path):
+        def delete_directory_contents(directory_path):
             if os.path.exists(directory_path) and os.path.isdir(directory_path):
                 for filename in os.listdir(directory_path):
                     file_path = os.path.join(directory_path, filename)
-                    if os.path.isfile(file_path):
-                        os.remove(file_path)
-                        print(f"Deleted: {file_path}")
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)
+                            print(f"Deleted file: {file_path}")
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                            print(f"Deleted directory: {file_path}")
+                    except Exception as e:
+                        print(f"Failed to delete {file_path}. Reason: {e}")
             else:
                 print(f"'{directory_path}' is not a valid directory")
-            
-        delete_files_in_directory(self.img_tokens_path)
-        delete_files_in_directory(self.img_cond_path)
+
+        # Empty the specific directories
+        delete_directory_contents(self.img_tokens_path)
+        delete_directory_contents(self.img_cond_path)
 
 
     @staticmethod

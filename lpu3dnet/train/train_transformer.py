@@ -91,6 +91,27 @@ class TrainTransformer:
             remove_all_files_in_directory(self.transformer_path)
         
 
+    def perturb_sequence(self,img_tokens):
+
+        mask = torch.bernoulli(
+        self.cfg_transformer.train.p_keep * torch.ones(
+        img_tokens.shape, device=self.device)
+        )
+    
+        mask = mask.round().to(dtype=torch.int64)
+
+        random_indices = torch.randint_like(
+                         img_tokens,
+                            self.cfg_transformer.architecture.vocab_size
+                                        )
+    
+        perturbed_indices = mask * img_tokens + (1 - mask) * random_indices
+        return perturbed_indices
+    
+
+
+
+
     def train(self):
         
         sos_token = self.cfg_transformer.train.sos_token
@@ -100,8 +121,6 @@ class TrainTransformer:
         start_time = time.time()
         # using the same dataloader as VQGAN training process
         train_dataset = dataset_transformer_cond.Dataset_transformer(
-                        self.cfg_vqgan,
-                        self.cfg_transformer,
                         self.cfg_dataset,
                         device=self.device)
         
@@ -132,28 +151,17 @@ class TrainTransformer:
                     sos_tokens = torch.ones(img_tokens.shape[0], 1) * sos_token
                     sos_tokens = sos_tokens.long().to(self.device)
 
-                    mask = torch.bernoulli(
-                        self.cfg_transformer.train.p_keep * torch.ones(
-                        img_tokens.shape, device=self.device)
-                        )
-                    
-                    mask = mask.round().to(dtype=torch.int64)
+                    # input_tokens = self.perturb_sequence(img_tokens)
+                    input_tokens = torch.cat((sos_tokens, img_tokens), dim=1)
+                    # remove last token from input_tokens
+                    input_tokens = input_tokens[:,:-1]
+                    target = img_tokens.clone()
 
-                    random_indices = torch.randint_like(
-                        img_tokens,
-                        self.cfg_transformer.architecture.vocab_size
-                                                        )
-                    
-                    perturbed_indices = mask * img_tokens + (1 - mask) * random_indices
-                    perturbed_indices = torch.cat((sos_tokens, perturbed_indices), dim=1)
-
-                    target = img_tokens
-                    perturbed_indices = perturbed_indices[:, :-1]
-                    logits = self.transformer(idx=perturbed_indices, cond=cond)
+                    logits = self.transformer(idx=input_tokens, cond=cond)
                     loss = self.transformer.loss_func(logits, target)
 
                     self.opt.zero_grad()
-                    loss.backward() #TODO: check if this is correct. check the loss is correct or not
+                    loss.backward() 
                     self.opt.step()
 
                     pbar.set_description(f"Epoch {epoch} at Step: {i+1}/{steps_per_epoch}")
