@@ -108,14 +108,17 @@ class ImageTokensGenerator:
             os.makedirs(cond_path, exist_ok=True)
 
             for img_index, img_name in enumerate(os.listdir(ct_folder)):
+                base_name = img_name.split('.')[0]
                 img_path = os.path.join(ct_folder, img_name)
                 image = self.tif_to_np(img_path)
 
                 # Process your image here to generate `tokens_all` and `cond`
                 tokens_all, cond = self.get_patch_tokens_cond(image)
+                tokens_all = tokens_all.cpu()
+                cond = cond.cpu()
                 # Save tokens and conditional vectors
-                torch.save(tokens_all, os.path.join(tokens_path, f'tokens_{img_index}.pt'))
-                torch.save(cond, os.path.join(cond_path, f'cond_{img_index}.pt'))
+                torch.save(tokens_all, os.path.join(tokens_path, f'tokens_{base_name}.pt'))
+                torch.save(cond, os.path.join(cond_path, f'cond_{base_name}.pt'))
 
 import time
 

@@ -55,7 +55,9 @@ class Encoder(nn.Module):
 # test
 if __name__ == "__main__":
     
-    enc = Encoder(1,256,16,2,[16,32,128,256,512],decrease_features=True)
+    enc = Encoder(1,256,16,2,[16,32,128,256,512],decrease_features=False)
+    # enc = Encoder(1,256,16,2,[16,64,128,256,512],decrease_features=True)
+
     print( 'The architecture is'+'\n{}'.format(
         summary(enc,(20,1,64,64,64)) 
         ))
