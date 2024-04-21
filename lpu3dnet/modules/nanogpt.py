@@ -157,8 +157,6 @@ class GPT(nn.Module):
     def forward(self, idx, cond,inference=False):
         device = idx.device
         b, t = idx.shape  # batch size, total sequence length
-        num_patches = cond.size(1)
-        seq_per_patch = t // num_patches  # Calculate tokens per patch
 
         # Token and positional embeddings
         tok_emb = self.transformer.wte(idx)
@@ -167,8 +165,7 @@ class GPT(nn.Module):
         all_emb = tok_emb + pos_emb
 
         # conditional vectors integration
-        cond_rep = cond.repeat(1, 1, seq_per_patch).view(b, -1, cond.size(-1))  # Replicate and reshape: [batch, t, features_num]
-        cond_rep = self.transformer.cond_proj(cond_rep)
+        cond_rep = self.transformer.cond_proj(cond)
 
         # Concatenate everything and project to model dimension
         x = torch.cat((all_emb, cond_rep), dim=-1)
@@ -179,13 +176,11 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
+        logits = self.lm_head(x)
 
         # loss function should be claculated only based on next tokens
         if inference:
-            logits = self.lm_head(x[:, [-1], :]) # only predict the next tokens
-        else:
-            logits = self.lm_head(x)
-
+            return logits[:,-self.config.features_num:,:]
         return logits
 
     def estimate_mfu(self, fwdbwd_per_iter, dt):
@@ -205,61 +200,29 @@ class GPT(nn.Module):
         return mfu
     
     @torch.no_grad()
-    def generate(self, idx, cond, max_new_tokens, temperature=1.0, top_k=None):
-        b, num_patches, cond_dim = cond.shape
-        seq_per_patch = 27  # Number of tokens corresponding to each image patch
-
+    def sample(self, token, cond, temperature=1.0, top_k=None):
+        '''
+        input: token and cond
+        output: token with same length
+        '''
+        b,t,cond_dim = cond.shape
         self.eval()  # Ensure the model is in evaluation mode to disable dropout
+        logits_gen = self.forward(token,cond,inference=True)
+        logits_gen = logits_gen / temperature
+        if top_k is not None:
+            indices_to_remove = logits_gen < torch.topk(logits_gen, top_k, dim=-1).values.min(dim=-1, keepdim=True).values
+            logits_gen[indices_to_remove] = -float('Inf')
+        # Convert logits to probabilities
+        probs = F.softmax(logits_gen, dim=-1)
+        # (27,3001)
+        probs = probs.view(-1, probs.size(-1))
 
-        for _ in range(max_new_tokens):
-            # Determine the conditional vectors for each segment of the sequence based on its length
-            seq_length = idx.size(1)  # Current total sequence length including generated tokens
-            extended_cond = torch.zeros(
-                (b, seq_length, cond_dim),
-                device=idx.device
-                )
-            
-            # Fill in the conditional information for each segment
-            for i in range(num_patches):
-                start_idx = i * seq_per_patch
-                end_idx = start_idx + seq_per_patch
-                # Use min to ensure we don't go beyond the current sequence length
-                end_idx = min(end_idx, seq_length)
-                if start_idx < seq_length:
-                    extended_cond[:, start_idx:end_idx, :] = cond[:, i, :].unsqueeze(1).repeat(1, end_idx - start_idx, 1)
-                else:
-                    break  # Exit the loop if we've covered the entire sequence length
-            # Project conditional vectors
-            cond_proj = self.transformer.cond_proj(extended_cond)
-            
+        # Sample from the probability distributions for each of the predicted 27 token positions
+        token_next_samples = torch.multinomial(probs, num_samples=1, replacement=True)
+        # sampled indices (27,1)
+        token_next = token_next_samples.view(-1, 27)
 
-            # Obtain the latest token embeddings and positional embeddings
-            tok_emb = self.transformer.wte(idx)
-            pos = torch.arange(
-                0,
-                idx.size(1),
-                dtype=torch.long,
-                device=idx.device
-                )
-            pos_emb = self.transformer.wpe(pos)
-            # Combine token embeddings, positional embeddings, and projected conditional vectors
-            x = torch.cat((tok_emb + pos_emb, cond_proj), dim=-1)
-            x = self.attn_start(x)
-
-            for block in self.transformer.h:
-                x = block(x)
-            x = self.transformer.ln_f(x)
-            logits = self.lm_head(x)
-
-            # Sample the next token
-            logits = logits[:, -1, :] / temperature  # Apply temperature scaling
-            if top_k is not None:
-                logits = self.top_k_logits(logits, top_k)
-            probs = F.softmax(logits, dim=-1)
-            idx_next = torch.multinomial(probs, num_samples=1)
-            idx = torch.cat((idx, idx_next), dim=1)  # Append the sampled token to the sequence
-
-        return idx
+        return token_next
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -269,18 +232,20 @@ if __name__ == "__main__":
     seq_len = int(27*8)
     cond_dim = 4
     patch_num = 8
+    features_num = 27
 
     idx = torch.randint(0, 3000, (10, seq_len)).to(device)
-    cond_info = torch.rand(b,patch_num,cond_dim).to(device).float()
+    cond_info = torch.randn(b,patch_num*features_num,cond_dim).to(device).float()
     c = gpt(idx, cond_info,inference=False)
+    print(c.shape)
 
     # autoregressive generation
-    idx = torch.randint(0, 3000, (10, 18)).to(device)
-    new_tokens = gpt.generate(
-        idx,
-        cond_info,
-        max_new_tokens=30,
-        temperature=1.0,
-        top_k=None
-        )
-    print(new_tokens.shape)
+    # idx = torch.randint(0, 3000, (10, 18)).to(device)
+    # new_tokens = gpt.generate(
+    #     idx,
+    #     cond_info,
+    #     max_new_tokens=30,
+    #     temperature=1.0,
+    #     top_k=None
+    #     )
+    # print(new_tokens.shape)

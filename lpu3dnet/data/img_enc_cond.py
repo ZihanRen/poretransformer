@@ -9,7 +9,7 @@ import shutil
 
 
 class ImageTokensGenerator:
-    def __init__(self, cfg_vqgan, cfg_transformer, cfg_dataset, device):
+    def __init__(self, cfg_vqgan, cfg_transformer, cfg_dataset, device,vqgan_epoch):
         self.device = device
         self.root_PATH = cfg_dataset.PATH.sub_vol_large
         self.ct_idx = cfg_dataset.ct_idx
@@ -17,7 +17,7 @@ class ImageTokensGenerator:
         self.img_cond_path = cfg_dataset.PATH.image_tokens_cond
 
         self.vqgan = vqgan.VQGAN(cfg_vqgan).to(device)
-        self.pretrained_vqgan_epoch = cfg_transformer.train.pretrained_vqgan_epoch
+        self.pretrained_vqgan_epoch = vqgan_epoch
         self.vqgan_path = os.path.join(
             cfg_dataset.checkpoints.PATH,
             cfg_dataset.experiment
@@ -87,7 +87,7 @@ class ImageTokensGenerator:
                     j_list.append(j)
                     k_list.append(k)
 
-        tokens_all = torch.cat(tokens_patch_list, dim=1).to(self.device)
+        tokens_all = torch.cat(tokens_patch_list, dim=0).to(self.device)
         phi_tensor = torch.tensor(phi_list).view(-1,1).to(self.device)
         i_tensor = torch.tensor(i_list).view(-1,1).to(self.device)
         j_tensor = torch.tensor(j_list).view(-1,1).to(self.device)
@@ -107,7 +107,7 @@ class ImageTokensGenerator:
             os.makedirs(tokens_path, exist_ok=True)
             os.makedirs(cond_path, exist_ok=True)
 
-            for img_index, img_name in enumerate(os.listdir(ct_folder)):
+            for idx, img_name in enumerate(os.listdir(ct_folder)):
                 base_name = img_name.split('.')[0]
                 img_path = os.path.join(ct_folder, img_name)
                 image = self.tif_to_np(img_path)
@@ -119,6 +119,7 @@ class ImageTokensGenerator:
                 # Save tokens and conditional vectors
                 torch.save(tokens_all, os.path.join(tokens_path, f'tokens_{base_name}.pt'))
                 torch.save(cond, os.path.join(cond_path, f'cond_{base_name}.pt'))
+
 
 import time
 
@@ -132,7 +133,7 @@ if __name__ == "__main__":
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_dataset = hydra.compose(config_name="dataset")
         cfg_transformer = hydra.compose(config_name="transformer")
-    generator = ImageTokensGenerator(cfg_vqgan, cfg_transformer,cfg_dataset, device)
+    generator = ImageTokensGenerator(cfg_vqgan, cfg_transformer,cfg_dataset, device,vqgan_epoch=25)
     generator.empty_folders()
     generator.generate_and_save_tokens_cond()
     end_time = time.time()  # Record end time

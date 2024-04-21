@@ -22,7 +22,13 @@ class Dataset_transformer(Dataset):
     # ct_idx: subvolumes that are sampled from main volume ct idx
 
     self.device = device
-    self.ct_idx = cfg.ct_idx
+    if cfg.target == 'validation':
+        self.ct_idx = cfg.ct_idx_val
+    elif cfg.target == 'train':
+        self.ct_idx = cfg.ct_idx
+    else:
+        raise ValueError('Invalid target value in config file. Must be either "train" or "validation"')
+    
     self.img_tokens_path = cfg.PATH.image_tokens
     self.img_cond_path = cfg.PATH.image_tokens_cond
 
@@ -45,14 +51,24 @@ class Dataset_transformer(Dataset):
   def __len__(self):
     return len(self.token_files)
 
+  def reshape(self, token,cond):
+     features_num = token.size(-1)
+     patch_num = cond.size(0)
+     token_flatten = token.view(1,-1)
+     cond_patch_list = [cond[i].unsqueeze(0).expand(features_num, -1) for i in range(patch_num)]
+     cond_flatten = torch.cat(cond_patch_list, dim=0)
+     return token_flatten, cond_flatten
+     
+
   def __getitem__(self, index):
     token_path = self.token_files[index]
     cond_path = self.cond_files[index]
     
     token = torch.load(token_path).to(self.device)
     cond = torch.load(cond_path).to(self.device)
+    token_flat, cond_flat = self.reshape(token,cond)
     
-    return token[0], cond.float()
+    return token_flat[0], cond_flat.float()
 
   def print_file_counts(self):
 

@@ -87,31 +87,6 @@ class VQGAN(nn.Module):
             l2_reg += torch.norm(param,2)
         return l2_reg
 
-    def freeze_encoder(self):
-        for param in self.encoder.parameters():
-            param.requires_grad = False
-    
-    def freeze_decoder(self):
-        for param in self.decoder.parameters():
-            param.requires_grad = False
-    
-    def freeze_codebook(self):
-        for param in self.codebook.parameters():
-            param.requires_grad = False
-        
-    
-    def unfreeze_encoder(self):
-        for param in self.encoder.parameters():
-            param.requires_grad = True
-    
-    def unfreeze_decoder(self):
-        for param in self.decoder.parameters():
-            param.requires_grad = True
-
-    def unfreeze_codebook(self):
-        for param in self.codebook.parameters():
-            param.requires_grad = True
-
     def decode(self, z):
         post_quant_conv_mapping = self.post_quant_conv(z)
         decoded_images = self.decoder(post_quant_conv_mapping)

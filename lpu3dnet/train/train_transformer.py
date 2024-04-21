@@ -43,18 +43,6 @@ class TrainTransformer:
         self.transformer_path = os.path.join(self.root_path, 'transformer')
         self.device = device
 
-
-        # load pretrained VQGAN model
-        self.vqgan = vqgan.VQGAN(self.cfg_vqgan).to(device=self.device)
-        self.vqgan.load_state_dict(
-            torch.load(
-                os.path.join(self.root_path, f'vqgan_epoch_{self.pretrained_vqgan_epoch}.pth'),
-                map_location=torch.device(self.device)
-                )
-            )
-        # freeze VQGAN parameters
-        self.vqgan.eval()
-
         self.transformer = transformer.Transformer(self.cfg_transformer).to(device=self.device)
         
         # initializew optimizer
@@ -63,6 +51,8 @@ class TrainTransformer:
         # intialize training losses tracking
         self.training_losses = {
             'total_loss': [],
+            'mse_loss_last': [],
+            'mse_loss_all': [],
             'total_loss_per_epoch': [],
             'time': []
         }
@@ -90,33 +80,13 @@ class TrainTransformer:
             # clear all previous files in this folder starting from new models
             remove_all_files_in_directory(self.transformer_path)
         
-
-    def perturb_sequence(self,img_tokens):
-
-        mask = torch.bernoulli(
-        self.cfg_transformer.train.p_keep * torch.ones(
-        img_tokens.shape, device=self.device)
-        )
     
-        mask = mask.round().to(dtype=torch.int64)
-
-        random_indices = torch.randint_like(
-                         img_tokens,
-                            self.cfg_transformer.architecture.vocab_size
-                                        )
-    
-        perturbed_indices = mask * img_tokens + (1 - mask) * random_indices
-        return perturbed_indices
-    
-
-
-
 
     def train(self):
         
         sos_token = self.cfg_transformer.train.sos_token
-
-
+        
+        
         print("Training transformer:")
         start_time = time.time()
         # using the same dataloader as VQGAN training process
@@ -146,20 +116,26 @@ class TrainTransformer:
 
                 for i, data_obj in enumerate(pbar):
                     img_tokens,cond  = data_obj[0], data_obj[1]
+                    b, seq_len, _ = cond.shape
+
+                    noise = torch.randn(b, seq_len, 1).to(self.device)
+                    cond = torch.cat([cond, noise], dim=-1)
                     
                     # train transformer
-                    sos_tokens = torch.ones(img_tokens.shape[0], 1) * sos_token
+                    sos_tokens = torch.ones(img_tokens.shape[0], self.cfg_transformer.architecture.features_num) * sos_token
                     sos_tokens = sos_tokens.long().to(self.device)
 
                     # input_tokens = self.perturb_sequence(img_tokens)
                     input_tokens = torch.cat((sos_tokens, img_tokens), dim=1)
-                    # remove last token from input_tokens
-                    input_tokens = input_tokens[:,:-1]
+                    # remove last patch of tokens from input_tokens
+                    input_tokens = input_tokens[:,:-self.cfg_transformer.architecture.features_num]
+
                     target = img_tokens.clone()
 
                     logits = self.transformer(idx=input_tokens, cond=cond)
-                    loss = self.transformer.loss_func(logits, target)
-
+                    loss_last = self.transformer.loss_func_last(logits, target)
+                    loss_all = self.transformer.loss_func_all(logits, target)
+                    loss = loss_last * 0.2 + loss_all * 0.8
                     self.opt.zero_grad()
                     loss.backward() 
                     self.opt.step()
@@ -171,6 +147,9 @@ class TrainTransformer:
 
                     # save losses per step
                     self.training_losses['total_loss'].append(loss.item())
+                    self.training_losses['mse_loss_last'].append(loss_last.item())
+                    self.training_losses['mse_loss_all'].append(loss_all.item())
+
             
             # save progress per epoch
 
@@ -209,7 +188,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("cpu") # used for debug
-    train_transformer = TrainTransformer(cfg_vqgan, cfg_transformer,cfg_dataset,device)
+    train_transformer = TrainTransformer(cfg_vqgan,cfg_transformer,cfg_dataset,device)
     train_transformer.prepare_training(clear_all=True)
     train_transformer.train()
 

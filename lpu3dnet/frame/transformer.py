@@ -1,3 +1,4 @@
+#%%
 from lpu3dnet.modules import nanogpt
 import torch
 from torch import nn
@@ -23,15 +24,26 @@ class Transformer(nn.Module):
         logits = self.model(idx,cond, inference=inference)
         return logits
 
-    def loss_func(self, logits, target):
-        return F.cross_entropy(logits.view(-1, logits.size(-1)), target.view(-1),ignore_index=-1)
+    def loss_func_all(self, logits, target):
+        return F.cross_entropy(
+            logits.view(-1, logits.size(-1)),
+            target.view(-1),
+            ignore_index=-1
+            )
 
-    @torch.no_grad()
-    def generate(self, idx, cond, max_new_tokens, temperature=1.0, top_k=None):
-        self.model.eval()
-        generate_idx = self.model.generate(idx,cond, max_new_tokens, temperature, top_k)
+    def loss_func_last(self, logits, target):
 
-        return generate_idx
+        logits_last_patch = logits[:, -self.cfg_architecture.features_num:, :]
+        # Extract the last patch of tokens from target
+        target_last_patch = target[:, -self.cfg_architecture.features_num:]
+
+        loss = F.cross_entropy(
+            logits_last_patch.reshape(-1, logits_last_patch.size(-1)),
+            target_last_patch.reshape(-1),
+            ignore_index=-1
+        )
+
+        return loss
 
     def configure_optimizers(self,device):
         weight_decay = self.cfg_train.weight_decay
@@ -73,39 +85,41 @@ class Transformer(nn.Module):
 
 # test the module
 if __name__ == "__main__":
-    experiment_idx = 7
-    @hydra.main(
-    config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
-    config_name="transformer",
-    version_base='1.2')
-
-    def main(cfg):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # print(OmegaConf.to_yaml(cfg))
-        transformer_obj = Transformer(cfg).to(device)
-        b = 10
-        seq_len = int(27*8)
-        cond_dim = 4
-        patch_num = 8
-
-        idx = torch.randint(0, 3000, (10, seq_len)).to(device)
-        cond_info = torch.rand(b,patch_num,cond_dim).to(device).float()
-        opt = transformer_obj.configure_optimizers(device)
-        logits = transformer_obj(idx,cond_info)
-        loss = transformer_obj.loss_func(logits, idx)
-        print(idx.shape)
-        print(cond_info.shape)
-
-        # generation phase
-        cond_info = torch.rand(b,patch_num,cond_dim).to(device).float()
-        idx = torch.randint(0, 3000, (10, 18)).to(device)
-        new_tokens = transformer_obj.generate(
-            idx,
-            cond_info,
-            max_new_tokens=30,
-            temperature=1.0,
-            top_k=None
-            )
-
     
-    main()
+    with hydra.initialize(config_path="../config/ex7"):
+        cfg_vqgan = hydra.compose(config_name="vqgan")
+        cfg_transformer = hydra.compose(config_name="transformer")
+        cfg_dataset = hydra.compose(config_name="dataset")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # print(OmegaConf.to_yaml(cfg))
+    transformer_obj = Transformer(cfg_transformer).to(device)
+    b = 10
+    seq_len = int(27*8)
+    cond_dim = 4
+    patch_num = 8
+    features_num = 27
+
+    idx = torch.randint(0, 3000, (10, seq_len)).to(device)
+    cond_info = torch.rand(b,patch_num*features_num,cond_dim).to(device).float()
+    opt = transformer_obj.configure_optimizers(device)
+    logits = transformer_obj(idx,cond_info)
+
+    loss_all = transformer_obj.loss_func_all(logits, idx)
+    loss_last = transformer_obj.loss_func_last(logits, idx)
+
+
+    # # generation phase
+    # cond_info = torch.rand(b,patch_num,cond_dim).to(device).float()
+    # idx = torch.randint(0, 3000, (10, 18)).to(device)
+    # new_tokens = transformer_obj.generate(
+    #     idx,
+    #     cond_info,
+    #     max_new_tokens=30,
+    #     temperature=1.0,
+    #     top_k=None
+    #     )
+
+
+
+# %%
