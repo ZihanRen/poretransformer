@@ -64,7 +64,7 @@ def tif_to_np(f_name):
     img = img.astype('float32')/255
     return img>0.5
 
-initialize(config_path=f"../config/ex7")
+initialize(config_path=f"../config/ex10")
 cfg_vqgan = compose(config_name="vqgan")
 cfg_transformer = compose(config_name="transformer")
 cfg_dataset = compose(config_name="dataset")
@@ -102,15 +102,16 @@ for i in range(6):
         ) 
 
 #%%
+volume_dim = 3
 def crop_img(img,vol_dim,sub_size=64):
     return img[
                 :sub_size*vol_dim,
                :sub_size*vol_dim,
                :sub_size*vol_dim
                ]
-img_0 = crop_img(img_list[0],3)
-img_1 = crop_img(img_list[1],3) # ground truth
-img_2 = crop_img(img_list[2],3)
+img_0 = crop_img(img_list[0],volume_dim)
+img_1 = crop_img(img_list[1],volume_dim) # ground truth
+img_2 = crop_img(img_list[2],volume_dim)
 
 img_gen = np.load('data_ref/1_pred.npy')
 
