@@ -118,8 +118,8 @@ class TrainTransformer:
                     img_tokens,cond  = data_obj[0], data_obj[1]
                     b, seq_len, _ = cond.shape
 
-                    noise = torch.randn(b, seq_len, 1).to(self.device)
-                    cond = torch.cat([cond, noise], dim=-1)
+                    # noise = torch.randn(b, seq_len, 1).to(self.device)
+                    # cond = torch.cat([cond, noise], dim=-1)
                     
                     # train transformer
                     sos_tokens = torch.ones(img_tokens.shape[0], self.cfg_transformer.architecture.features_num) * sos_token
@@ -135,7 +135,7 @@ class TrainTransformer:
                     logits = self.transformer(idx=input_tokens, cond=cond)
                     loss_last = self.transformer.loss_func_last(logits, target)
                     loss_all = self.transformer.loss_func_all(logits, target)
-                    loss = loss_last * 0.2 + loss_all * 0.8
+                    loss = loss_last * 0.05 + loss_all * 0.95
                     self.opt.zero_grad()
                     loss.backward() 
                     self.opt.step()
@@ -181,7 +181,7 @@ class TrainTransformer:
 
 #%%
 if __name__ == "__main__":
-    with hydra.initialize(config_path="../config/ex7"):
+    with hydra.initialize(config_path="../config/ex10"):
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_transformer = hydra.compose(config_name="transformer")
         cfg_dataset = hydra.compose(config_name="dataset")
