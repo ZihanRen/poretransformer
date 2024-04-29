@@ -200,7 +200,7 @@ class GPT(nn.Module):
         return mfu
     
     @torch.no_grad()
-    def sample(self, token, cond, temperature=1.0, top_k=None):
+    def sample(self, token, cond, temperature=1.0, top_k=None,features_num=27):
         '''
         input: token and cond
         output: token with same length
@@ -220,7 +220,7 @@ class GPT(nn.Module):
         # Sample from the probability distributions for each of the predicted 27 token positions
         token_next_samples = torch.multinomial(probs, num_samples=1, replacement=True)
         # sampled indices (27,1)
-        token_next = token_next_samples.view(-1, 27)
+        token_next = token_next_samples.view(-1, features_num)
 
         return token_next
 

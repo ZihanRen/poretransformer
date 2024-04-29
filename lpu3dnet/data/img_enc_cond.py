@@ -128,7 +128,7 @@ if __name__ == "__main__":
     start_time = time.time()
     # Assuming cfg_vqgan and cfg_dataset are defined as in your script
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    experiment_idx = 7
+    experiment_idx = 6
     with hydra.initialize(config_path=f"../config/ex{experiment_idx}"):
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_dataset = hydra.compose(config_name="dataset")
