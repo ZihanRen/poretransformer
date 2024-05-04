@@ -16,8 +16,7 @@ import pickle
 from hydra.experimental import compose, initialize
 import os
 import torch
-from lpu3dnet.frame import vqgan
-from lpu3dnet.frame import transformer
+
 
 def clean_img(img_t):
     '''
@@ -68,79 +67,73 @@ initialize(config_path=f"../config/ex10")
 cfg_vqgan = compose(config_name="vqgan")
 cfg_transformer = compose(config_name="transformer")
 cfg_dataset = compose(config_name="dataset")
-# %%
-epoch_vqgan = 25
-epoch_transformer = 170
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-root_path = os.path.join(cfg_dataset.checkpoints.PATH, cfg_dataset.experiment)
 
-vqgan_path = os.path.join(root_path,f'vqgan_epoch_{epoch_vqgan}.pth')
-transformer_path = os.path.join(root_path,'transformer',f'transformer_epoch_{epoch_transformer}.pth')
 
-model_vqgan = vqgan.VQGAN(cfg_vqgan)
-model_transformer = transformer.Transformer(cfg_transformer)
 
-model_vqgan.load_checkpoint(vqgan_path)
-model_transformer.load_checkpoint(transformer_path)
-
-model_vqgan = model_vqgan.to(device)
-model_transformer = model_transformer.to(device)
-
-model_transformer.eval()
-model_vqgan.eval()
-
-img_list = []
-for i in range(6):
-    img_list.append(
-        tif_to_np(
-            os.path.join(
-                cfg_dataset.PATH.main_vol,
-                f'main_{i}.tif'
-                )
-                  )
-        ) 
 
 #%%
-volume_dim = 3
+
+#TODO : random cropping
+# TODO ramdom realizations
 def crop_img(img,vol_dim,sub_size=64):
     return img[
                 :sub_size*vol_dim,
                :sub_size*vol_dim,
                :sub_size*vol_dim
                ]
-img_0 = crop_img(img_list[0],volume_dim)
-img_1 = crop_img(img_list[1],volume_dim) # ground truth
-img_2 = crop_img(img_list[2],volume_dim)
 
-img_gen = np.load('data_ref/1_pred.npy')
+# read pickle file 
+volume_dim = 3
 
-#%% kr/k simulation
-from cpgan.ooppnm import pnm_sim_old
+for sample_idx in range(6):
+    compare_idx = [x for x in range(6) if x != sample_idx]
 
-def simulation_phys(img):
-    data_pnm = pnm_sim_old.Pnm_sim(im=img)
-    data_pnm.network_extract()
-    if data_pnm.error == 1:
-        raise ValueError('Error in network extraction')
-    data_pnm.init_physics()
-    data_pnm.get_absolute_perm()
-    data_pnm.invasion_percolation()
-    data_pnm.kr_simulation()
-    data_pnm.close_ws()
-    return data_pnm.data_tmp
-generate_df = simulation_phys(img_gen)
+    # get generated volume and original volume
+    with open(
+        f'data_ref/sample_{sample_idx}/img_output_sample_{sample_idx}_vol_{volume_dim}.pkl',
+        'rb'
+        ) as file:
+        img_cluster = pickle.load(file)
 
-compare_df_list = [simulation_phys(img_0), 
-                   simulation_phys(img_1), # ground truth
-                   simulation_phys(img_2)
-                   ]
+    img_compare_list = []
 
-with open('data_ref/generate_df.pickle', 'wb') as file:
-    pickle.dump(generate_df, file)
+    for i in compare_idx:
+        img_compare_list.append(
+            tif_to_np(
+                os.path.join(
+                    cfg_dataset.PATH.main_vol,
+                    f'main_{i}.tif'
+                    )
+                    )
+            ) 
 
-with open('data_ref/compare_df_list.pickle', 'wb') as file:
-    pickle.dump(compare_df_list, file)
+    img_crop_compare_list = [crop_img(x,volume_dim) for x in img_compare_list]
+
+    
+    from cpgan.ooppnm import pnm_sim_old
+
+    def simulation_phys(img):
+        data_pnm = pnm_sim_old.Pnm_sim(im=img)
+        data_pnm.network_extract()
+        if data_pnm.error == 1:
+            raise ValueError('Error in network extraction')
+        data_pnm.init_physics()
+        data_pnm.get_absolute_perm()
+        data_pnm.invasion_percolation()
+        data_pnm.kr_simulation()
+        data_pnm.close_ws()
+        return data_pnm.data_tmp
+
+    pred_df = simulation_phys(img_cluster['generated'])
+    real_df = simulation_phys(img_cluster['original'])
+    compare_df_list = [simulation_phys(x) for x in img_crop_compare_list]
+
+    df_results = {'prediction':pred_df,
+                'real':real_df,
+                'compare':compare_df_list
+                }
 
 
-#%%
+    with open(f'data_ref/sample_{sample_idx}/df_results_{volume_dim}.pickle', 'wb') as file:
+        pickle.dump(df_results, file)
