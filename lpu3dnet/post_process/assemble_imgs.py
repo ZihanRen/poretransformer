@@ -11,6 +11,7 @@ from hydra.experimental import compose, initialize
 import os
 import torch
 from lpu3dnet.post_process.util import *
+from lpu3dnet.post_process.criteria import *
 
 
 
@@ -38,7 +39,7 @@ for i in range(6):
                   )
         )
 
-volume_dimension = 3
+volume_dimension = 6
 
 for sample_idx in range(len(img_list)):
 
@@ -58,26 +59,52 @@ for sample_idx in range(len(img_list)):
 
     sampling_par = {
         'temperature': 1,
-        'top_k': 4
+        'top_k': 10
     }
 
     generator = Generate_Spatial_Ds(
         model_transformer,
         model_vqgan,
-        volume_dimension=3,
+        volume_dimension=volume_dimension,
         img_sample=img_sample,
         device=device,
         sampling_par=sampling_par,
-        with_original=True
+        with_original=False
         )
 
 
     ds_spatial, volume, volume_original = generator.main()
     phi_list,phi_gen_list = generator.compare_porosity()
     img_output = {'generated': volume, 'original': volume_original}
-    
-    os.makedirs(f'data_ref/sample_{sample_idx}',exist_ok=True)
-    with open(f'data_ref/sample_{sample_idx}/img_output_sample_{sample_idx}_vol_{volume_dimension}.pkl', 'wb') as f:
+
+    try:
+        criteria_k = filter_abs_k(volume,threshold=50)
+    except:
+        criteria_k = False
+
+    while not criteria_k:
+
+        generator = Generate_Spatial_Ds(
+                model_transformer,
+                model_vqgan,
+                volume_dimension=volume_dimension,
+                img_sample=img_sample,
+                device=device,
+                sampling_par=sampling_par,
+                with_original=False
+                )
+
+
+        ds_spatial, volume, volume_original = generator.main()
+        phi_list,phi_gen_list = generator.compare_porosity()
+        img_output = {'generated': volume, 'original': volume_original}
+        try:
+            criteria_k = filter_abs_k(volume,threshold=50)
+        except:
+            criteria_k = False
+
+    os.makedirs(f'data_ref_hard/sample_{sample_idx}',exist_ok=True)
+    with open(f'data_ref_hard/sample_{sample_idx}/img_output_sample_{sample_idx}_vol_{volume_dimension}.pkl', 'wb') as f:
         pickle.dump(img_output, f)
 
 

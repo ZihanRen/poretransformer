@@ -70,6 +70,9 @@ cfg_dataset = compose(config_name="dataset")
 
 
 
+# gloabl variables
+volume_dim = 3
+root_dir = 'data_ref_hard'
 
 
 #%%
@@ -84,14 +87,14 @@ def crop_img(img,vol_dim,sub_size=64):
                ]
 
 # read pickle file 
-volume_dim = 3
 
 for sample_idx in range(6):
+    print(sample_idx)
     compare_idx = [x for x in range(6) if x != sample_idx]
 
     # get generated volume and original volume
     with open(
-        f'data_ref/sample_{sample_idx}/img_output_sample_{sample_idx}_vol_{volume_dim}.pkl',
+        f'{root_dir}/sample_{sample_idx}/img_output_sample_{sample_idx}_vol_{volume_dim}.pkl',
         'rb'
         ) as file:
         img_cluster = pickle.load(file)
@@ -135,5 +138,5 @@ for sample_idx in range(6):
                 }
 
 
-    with open(f'data_ref/sample_{sample_idx}/df_results_{volume_dim}.pickle', 'wb') as file:
+    with open(f'{root_dir}/sample_{sample_idx}/df_results_{volume_dim}.pickle', 'wb') as file:
         pickle.dump(df_results, file)
