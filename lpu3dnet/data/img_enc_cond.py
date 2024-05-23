@@ -133,7 +133,7 @@ if __name__ == "__main__":
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_dataset = hydra.compose(config_name="dataset")
         cfg_transformer = hydra.compose(config_name="transformer")
-    generator = ImageTokensGenerator(cfg_vqgan, cfg_transformer,cfg_dataset, device,vqgan_epoch=25)
+    generator = ImageTokensGenerator(cfg_vqgan, cfg_transformer,cfg_dataset, device,vqgan_epoch=25) # TODO should replace 25 with 10
     generator.empty_folders()
     generator.generate_and_save_tokens_cond()
     end_time = time.time()  # Record end time

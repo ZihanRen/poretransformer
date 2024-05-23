@@ -152,7 +152,7 @@ class TrainTransformer:
 
             
             # save progress per epoch
-
+            
             self.training_losses['total_loss_per_epoch'].append(train_loss_per_epoch/steps_per_epoch)
 
             if epoch % 5 == 0:
@@ -181,7 +181,7 @@ class TrainTransformer:
 
 #%%
 if __name__ == "__main__":
-    with hydra.initialize(config_path="../config/ex6"):
+    with hydra.initialize(config_path="../config/ex11"):
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_transformer = hydra.compose(config_name="transformer")
         cfg_dataset = hydra.compose(config_name="dataset")

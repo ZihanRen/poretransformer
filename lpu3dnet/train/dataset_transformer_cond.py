@@ -68,6 +68,7 @@ class Dataset_transformer(Dataset):
     cond = torch.load(cond_path).to(self.device)
     token_flat, cond_flat = self.reshape(token,cond)
     
+    # return token_flat[0], cond_flat.float()
     return token_flat[0], cond_flat.float()
 
   def print_file_counts(self):
@@ -85,7 +86,7 @@ class Dataset_transformer(Dataset):
 
 
 if __name__ == "__main__":
-  experiment_idx = 6
+  experiment_idx = 11
 
   @hydra.main(
     config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
