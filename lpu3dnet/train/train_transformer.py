@@ -13,6 +13,7 @@ import hydra
 
 
 def save_to_pkl(my_list, file_path):
+    
     """
     Save a Python list to a .pkl file.
 
@@ -20,6 +21,7 @@ def save_to_pkl(my_list, file_path):
     - my_list (list): The list you want to save.
     - file_path (str): The path where you want to save the .pkl file.
     """
+
     with open(file_path, 'wb') as f:
         pickle.dump(my_list, f)
 

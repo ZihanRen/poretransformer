@@ -93,6 +93,8 @@ if __name__ == "__main__":
     config_name="dataset",
     version_base='1.2')
   def main(cfg):
+
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_vqgan = Dataset_transformer(cfg,device)
@@ -113,9 +115,46 @@ if __name__ == "__main__":
 
     train_data_loader = DataLoader(data_vqgan,batch_size=16,shuffle=True)
 
+    def attention_window(sub_window_size,token_vector):
+       
+       
+       sub_token_list = []
+       expansion_features = 64
+       left_idx = 0
+       # window_size = 8 - initialize for sos token
+       right_idx = sub_window_size-1
+       window_size = 8
+
+
+
+       while right_idx <= window_size:
+            left_idx_expand = left_idx*expansion_features
+            right_idx_expand = right_idx*expansion_features
+            # extract sub_token but leave space for sos token
+            sub_token = token_vector[:,left_idx_expand:right_idx_expand]
+            sub_token_list.append(sub_token)
+
+            if right_idx == sub_window_size-1:   
+               # update right idx but not left idx
+               right_idx += 1
+
+            else:
+                left_idx += 1
+                right_idx += 1
+      
+       return sub_token_list
+
+
     for i, data_obj in enumerate(train_data_loader):
       tokens, cond = data_obj[0], data_obj[1]
-      if i == 3:
+
+      attn_list = attention_window(4,tokens)
+      for sub_token in attn_list:
+         print(f'sub token shape is {sub_token.size()}')
+
+
+
+      if i == 1:
         break
       print(f'Batch number:{i}')
       print(f'input tokens shape is {tokens.size()}, dtype is {tokens.dtype}')
