@@ -100,17 +100,6 @@ if __name__ == "__main__":
     data_vqgan = Dataset_transformer(cfg,device)
     data_vqgan.print_parameters()
     data_vqgan.print_file_counts()
-    # print(data_vqgan.token_files[:10])
-    # print('\n')
-    # print(data_vqgan.cond_files[:10])
-    # print('\n')
-
-    # print(data_vqgan.token_files[-10:])
-    # print('\n')
-
-    # print(data_vqgan.cond_files[-10:])
-    # print('\n')
-
 
 
     train_data_loader = DataLoader(data_vqgan,batch_size=16,shuffle=True)
@@ -148,9 +137,9 @@ if __name__ == "__main__":
     for i, data_obj in enumerate(train_data_loader):
       tokens, cond = data_obj[0], data_obj[1]
 
-      attn_list = attention_window(4,tokens)
-      for sub_token in attn_list:
-         print(f'sub token shape is {sub_token.size()}')
+      # attn_list = attention_window(4,tokens)
+      # for sub_token in attn_list:
+      #    print(f'sub token shape is {sub_token.size()}')
 
 
 

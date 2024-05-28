@@ -3,7 +3,7 @@ experiment: ex10
 
 
 architecture:
-  block_size: 512 # 3^3 * 8: 8 patches of 27 tokens so total is 27*8
+  block_size: 256 # sliding attention size is 4
   vocab_size: 3001  # codebook size of VQ-VAE
   n_layer: 12
   n_head: 12 # number of heads in multiheadattention model
@@ -20,6 +20,7 @@ architecture:
 # training parameters
 # TODO
 train:
+  sub_window_size: 5 # size of subwindow for sliding attention
   p_keep: None #TODO
   sos_token: 3000 # idx should be larger than vocab_size (3000) - 1
   load_model: False

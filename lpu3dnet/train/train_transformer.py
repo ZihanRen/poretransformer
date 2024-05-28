@@ -26,6 +26,36 @@ def save_to_pkl(my_list, file_path):
         pickle.dump(my_list, f)
 
 
+def attention_window(sub_window_size,token_vector):
+    
+    
+    sub_token_list = []
+    expansion_features = 64
+    left_idx = 0
+    # window_size = 8 - initialize for sos token
+    right_idx = sub_window_size-1
+    window_size = 8
+
+
+
+    while right_idx <= window_size:
+        left_idx_expand = left_idx*expansion_features
+        right_idx_expand = right_idx*expansion_features
+        # extract sub_token but leave space for sos token
+        sub_token = token_vector[:,left_idx_expand:right_idx_expand]
+        sub_token_list.append(sub_token)
+
+        if right_idx == sub_window_size-1:   
+            # update right idx but not left idx
+            right_idx += 1
+
+        else:
+            left_idx += 1
+            right_idx += 1
+    
+    return sub_token_list
+
+
 class TrainTransformer:
     def __init__(
             self,
@@ -87,6 +117,7 @@ class TrainTransformer:
     def train(self):
         
         sos_token = self.cfg_transformer.train.sos_token
+        sub_window = self.cfg_transformer.train.sub_window_size
         
         
         print("Training transformer:")
@@ -117,40 +148,68 @@ class TrainTransformer:
                 ) as pbar:
 
                 for i, data_obj in enumerate(pbar):
-                    img_tokens,cond  = data_obj[0], data_obj[1]
-                    b, seq_len, _ = cond.shape
-
-                    # noise = torch.randn(b, seq_len, 1).to(self.device)
-                    # cond = torch.cat([cond, noise], dim=-1)
+                    img_tokens,condtional_tokens  = data_obj[0], data_obj[1]
                     
-                    # train transformer
-                    sos_tokens = torch.ones(img_tokens.shape[0], self.cfg_transformer.architecture.features_num) * sos_token
-                    sos_tokens = sos_tokens.long().to(self.device)
 
-                    # input_tokens = self.perturb_sequence(img_tokens)
-                    input_tokens = torch.cat((sos_tokens, img_tokens), dim=1)
-                    # remove last patch of tokens from input_tokens
-                    input_tokens = input_tokens[:,:-self.cfg_transformer.architecture.features_num]
+                    # generating tokens and cond list for sliding attention window
+                    token_window_list = attention_window(sub_window,img_tokens)
+                    cond_window_list = attention_window(sub_window,condtional_tokens)
+                    
+                    window_loss = 0
+                    window_loss_last = 0
+                    window_loss_all = 0
+                    for i in range(sub_window):
+                        
+                        input_tokens = token_window_list[i]
+                        cond = cond_window_list[i]
 
-                    target = img_tokens.clone()
+                        if i == 0:
+                            # concat with sos token
+                            sos_tokens = torch.ones(
+                                input_tokens.shape[0],
+                                self.cfg_transformer.architecture.features_num
+                                ) * sos_token
+                            sos_tokens = sos_tokens.long().to(device)
+                            train_tokens = torch.cat((sos_tokens, input_tokens), dim=1)
 
-                    logits = self.transformer(idx=input_tokens, cond=cond)
-                    loss_last = self.transformer.loss_func_last(logits, target)
-                    loss_all = self.transformer.loss_func_all(logits, target)
-                    loss = loss_last * 0.05 + loss_all * 0.95
-                    self.opt.zero_grad()
-                    loss.backward() 
-                    self.opt.step()
+                            # pad cond vector
+                            pad_cond = torch.zeros(
+                                cond.shape[0],
+                                self.cfg_transformer.architecture.features_num,
+                                4
+                                )
+                            
+                            pad_cond = pad_cond.float().to(device)
+                            cond = torch.cat((pad_cond,cond), dim=1)
+                            target = input_tokens.clone().contiguous()
+                            train_tokens = train_tokens[:,:-self.cfg_transformer.architecture.features_num]
+
+                        else:
+                            train_tokens = input_tokens[:,:-self.cfg_transformer.architecture.features_num]
+                            target = input_tokens[:,self.cfg_transformer.architecture.features_num:].contiguous()
+                        
+                        # slicing conditional information to include only predicted patch of tokens
+                        cond = cond[:,self.cfg_transformer.architecture.features_num:]
+
+                        logits = self.transformer(idx=train_tokens, cond=cond)
+                        loss_last = self.transformer.loss_func_last(logits, target)
+                        loss_all = self.transformer.loss_func_all(logits, target)
+                        loss = loss_last * 0.05 + loss_all * 0.95
+                        self.opt.zero_grad()
+                        loss.backward()
+                        self.opt.step()
+                        window_loss += loss.item()
+                        window_loss_last += loss_last.item()
+                        window_loss_all += loss_all.item()
 
                     pbar.set_description(f"Epoch {epoch} at Step: {i+1}/{steps_per_epoch}")
-                    pbar.set_postfix(Loss=loss.item())
-
-                    train_loss_per_epoch += loss.item()
+                    pbar.set_postfix(Loss=window_loss)
+                    train_loss_per_epoch += window_loss
 
                     # save losses per step
-                    self.training_losses['total_loss'].append(loss.item())
-                    self.training_losses['mse_loss_last'].append(loss_last.item())
-                    self.training_losses['mse_loss_all'].append(loss_all.item())
+                    self.training_losses['total_loss'].append(window_loss)
+                    self.training_losses['mse_loss_last'].append(window_loss_last)
+                    self.training_losses['mse_loss_all'].append(window_loss_all)
 
             
             # save progress per epoch

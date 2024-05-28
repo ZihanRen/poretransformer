@@ -27,3 +27,5 @@ random_indices = torch.randint_like(
 perturbed_indices = mask * img_tokens + (1 - mask) * random_indices
             
 # %%
+target = torch.rand(32,3001)
+# %%
