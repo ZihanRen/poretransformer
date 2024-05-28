@@ -10,6 +10,8 @@ PATH:
 ct_idx: [2,3,4,5]
 ct_idx_val: [0,1]
 
+token_end: 32 # should equal to number of features
+
 # checkpoints directory
 checkpoints:
   PATH: /journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/train/checkpoints

@@ -1,5 +1,5 @@
 Project: config_transformer
-experiment: ex10
+experiment: ex11
 
 
 architecture:
@@ -13,14 +13,13 @@ architecture:
   cond_dim: 4 # number of conditional attributes - ijk and porosity + 1 noise dimension
   cond_embd: 300 # expand dimension of features - tune this parameter to control power of conditioning generation
   tokens_embd: 3000 # dimension of token embeddings initially
-  features_num: 64
+  features_num: 32
 
 
 
 # training parameters
 # TODO
 train:
-  sub_window_size: 5 # size of subwindow for sliding attention
   p_keep: None #TODO
   sos_token: 3000 # idx should be larger than vocab_size (3000) - 1
   load_model: False
