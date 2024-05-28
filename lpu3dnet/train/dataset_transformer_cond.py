@@ -39,6 +39,7 @@ class Dataset_transformer(Dataset):
     # Collecting paths for tokens and conditions
     self.token_files = []
     self.cond_files = []
+    self.cfg = cfg
 
     
     for idx in self.ct_idx:
@@ -66,6 +67,7 @@ class Dataset_transformer(Dataset):
     
     token = torch.load(token_path).to(self.device)
     cond = torch.load(cond_path).to(self.device)
+    token = token[:,:self.cfg.token_end].contiguous()
     token_flat, cond_flat = self.reshape(token,cond)
     
     # return token_flat[0], cond_flat.float()
@@ -103,37 +105,6 @@ if __name__ == "__main__":
 
 
     train_data_loader = DataLoader(data_vqgan,batch_size=16,shuffle=True)
-
-    def attention_window(sub_window_size,token_vector):
-       
-       
-       sub_token_list = []
-       expansion_features = 64
-       left_idx = 0
-       # window_size = 8 - initialize for sos token
-       right_idx = sub_window_size-1
-       window_size = 8
-
-
-
-       while right_idx <= window_size:
-            left_idx_expand = left_idx*expansion_features
-            right_idx_expand = right_idx*expansion_features
-            # extract sub_token but leave space for sos token
-            sub_token = token_vector[:,left_idx_expand:right_idx_expand]
-            sub_token_list.append(sub_token)
-
-            if right_idx == sub_window_size-1:   
-               # update right idx but not left idx
-               right_idx += 1
-
-            else:
-                left_idx += 1
-                right_idx += 1
-      
-       return sub_token_list
-
-
     for i, data_obj in enumerate(train_data_loader):
       tokens, cond = data_obj[0], data_obj[1]
 
