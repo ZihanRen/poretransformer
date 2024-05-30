@@ -201,10 +201,12 @@ class GPT(nn.Module):
     
     @torch.no_grad()
     def sample(self, token, cond, temperature=1.0, top_k=None,features_num=27):
+        
         '''
         input: token and cond
         output: token with same length
         '''
+
         b,t,cond_dim = cond.shape
         self.eval()  # Ensure the model is in evaluation mode to disable dropout
         logits_gen = self.forward(token,cond,inference=True)
