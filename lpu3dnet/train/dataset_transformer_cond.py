@@ -67,7 +67,7 @@ class Dataset_transformer(Dataset):
     
     token = torch.load(token_path).to(self.device)
     cond = torch.load(cond_path).to(self.device)
-    token = token[:,:self.cfg.token_end].contiguous()
+    # token = token[:,:self.cfg.token_end].contiguous()
     token_flat, cond_flat = self.reshape(token,cond)
     
     # return token_flat[0], cond_flat.float()

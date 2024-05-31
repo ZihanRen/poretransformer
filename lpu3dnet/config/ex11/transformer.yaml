@@ -3,7 +3,7 @@ experiment: ex11
 
 
 architecture:
-  block_size: 256 # sliding attention size is 4
+  block_size: 512 # sliding attention size is 4
   vocab_size: 3001  # codebook size of VQ-VAE
   n_layer: 12
   n_head: 12 # number of heads in multiheadattention model
@@ -13,7 +13,7 @@ architecture:
   cond_dim: 4 # number of conditional attributes - ijk and porosity + 1 noise dimension
   cond_embd: 300 # expand dimension of features - tune this parameter to control power of conditioning generation
   tokens_embd: 3000 # dimension of token embeddings initially
-  features_num: 32
+  features_num: 64
 
 
 
