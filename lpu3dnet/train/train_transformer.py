@@ -189,5 +189,4 @@ if __name__ == "__main__":
     train_transformer.prepare_training(clear_all=True)
     train_transformer.train()
 
-    # train_transformer.train()
 # %%
