@@ -107,7 +107,9 @@ if __name__ == "__main__":
     train_data_loader = DataLoader(data_vqgan,batch_size=16,shuffle=True)
     for i, data_obj in enumerate(train_data_loader):
       tokens, cond = data_obj[0], data_obj[1]
-      print(cond[0,:10,:])
+      cond = cond[:,:,0].unsqueeze(2)
+      # print(cond.shape)
+      # print(cond[0,:10,:])
 
       # attn_list = attention_window(4,tokens)
       # for sub_token in attn_list:

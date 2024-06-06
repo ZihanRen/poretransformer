@@ -119,6 +119,8 @@ class TrainTransformer:
 
                 for i, data_obj in enumerate(pbar):
                     img_tokens,cond  = data_obj[0], data_obj[1]
+                    # only select the first dimension of cond - porosity
+                    cond = cond[:,:,0].unsqueeze(2)
                     
                     # train transformer
                     sos_tokens = torch.ones(img_tokens.shape[0], self.cfg_transformer.architecture.features_num) * sos_token
@@ -178,7 +180,7 @@ class TrainTransformer:
 
 #%%
 if __name__ == "__main__":
-    with hydra.initialize(config_path="../config/ex11"):
+    with hydra.initialize(config_path="../config/ex12"):
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_transformer = hydra.compose(config_name="transformer")
         cfg_dataset = hydra.compose(config_name="dataset")
