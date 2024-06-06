@@ -7,6 +7,10 @@ from lpu3dnet.frame import vqgan
 import hydra
 import shutil
 
+from cpgan.ooppnm import img_process
+img_prc = img_process.Image_process()
+
+
 
 class ImageTokensGenerator:
     def __init__(self, cfg_vqgan, cfg_transformer, cfg_dataset, device,vqgan_epoch):
@@ -31,6 +35,12 @@ class ImageTokensGenerator:
         )
         self.vqgan.to(self.device)
         self.vqgan.eval()
+
+    def gen_img_from_z(self,z):
+        with torch.no_grad():
+            img = self.vqgan.decode(z)
+            img = img_prc.clean_img(img)[0]
+        return img
     
     def empty_folders(self):
         def delete_directory_contents(directory_path):
@@ -77,11 +87,14 @@ class ImageTokensGenerator:
             for j in range(2):
                 for k in range(2):
                     subset_image = img[i*64:(i+1)*64, j*64:(j+1)*64, k*64:(k+1)*64]
-                    phi_list.append(ps.metrics.porosity(subset_image))
                     subset_image = np.expand_dims(subset_image, axis=(0,1))
                     subset_image = torch.from_numpy(subset_image).float().to(self.device)
                     with torch.no_grad():
                         subset_tokens = self.get_img_tokens(subset_image)
+                        z_current = self.vqgan.tokens_to_z(subset_tokens,total_features_vec_num=64)
+                        img_gen = self.gen_img_from_z(z_current)
+                        phi_list.append(ps.metrics.porosity(img_gen))
+
                     tokens_patch_list.append(subset_tokens)
                     i_list.append(i)
                     j_list.append(j)
@@ -119,6 +132,7 @@ class ImageTokensGenerator:
                 # Save tokens and conditional vectors
                 torch.save(tokens_all, os.path.join(tokens_path, f'tokens_{base_name}.pt'))
                 torch.save(cond, os.path.join(cond_path, f'cond_{base_name}.pt'))
+
 
 
 import time
