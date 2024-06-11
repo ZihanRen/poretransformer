@@ -7,11 +7,15 @@ import dash
 from dash import html, dcc, Input, Output
 import plotly.graph_objects as go
 
-def load_data(sample_idx, vol_dim, root_dir):
-    file_path = f'{root_dir}/sample_{sample_idx}/img_output_sample_{sample_idx}_vol_{vol_dim}.pkl'
+def load_data(ct_idx, vol_dim,root_dir,sample_idx,emsemble_idx=0):
+    file_path = f'{root_dir}/sample_{ct_idx}/img_gen_vol_{vol_dim}.pkl'
     with open(file_path, 'rb') as file:
         img_results = pickle.load(file)
-    return img_results['generated']
+    
+    img = img_results[sample_idx]['generate'][emsemble_idx]
+    return img
+
+
 # %%
 def create_dash_app(data):
     app = dash.Dash(__name__)
@@ -69,12 +73,20 @@ def create_dash_app(data):
 # Run the app
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Load and display a 3D volume")
-    parser.add_argument("sample_idx", type=int, help="Index of the sample")
+    parser.add_argument("ct_idx", type=int, help="Index of the CT scan")
     parser.add_argument("vol_dim", type=int, help="Dimension size of the volume")
-    parser.add_argument("root_dir", type=str, default='data_ref', nargs='?', help="Root directory where data is stored")
+    parser.add_argument("root_dir", type=str, default='data_ref_hard', nargs='?', help="Root directory where data is stored")
+    parser.add_argument("sample_idx", type=int, default=0, nargs='?', help="Index of the sample")
+    parser.add_argument("emsemble_idx", type=int, default=0, nargs='?', help="Index of the ensemble")
     args = parser.parse_args()
 
-    data = load_data(args.sample_idx, args.vol_dim, args.root_dir)
+    data = load_data(
+        args.sample_idx,
+        args.vol_dim,
+        args.root_dir,
+        args.ct_idx,
+        args.emsemble_idx
+        )
     app = create_dash_app(data)
     app.run_server(debug=True)
 # %%
