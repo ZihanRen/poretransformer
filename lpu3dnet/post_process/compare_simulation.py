@@ -74,10 +74,10 @@ for sample_idx in img_data.keys():
     real_phys = simulation_phys(img_data[sample_idx]['original'])
     sim_results_per_ct[sample_idx]['original'] = real_phys
     # simulate generated
-    sim_results_per_ct[sample_idx]['generated'] = []
-    for gen_sample in img_data[sample_idx]['generated']:
+    sim_results_per_ct[sample_idx]['generate'] = []
+    for gen_sample in img_data[sample_idx]['generate']:
         gen_phys = simulation_phys(gen_sample)
-        sim_results_per_ct[sample_idx]['generated'].append(gen_phys)
+        sim_results_per_ct[sample_idx]['generate'].append(gen_phys)
 
 
 with open(f'{root_dir}/sample_{ct_idx}/phys_results_{volume_dim}.pickle', 'wb') as file:
