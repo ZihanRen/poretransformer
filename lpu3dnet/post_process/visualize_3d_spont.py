@@ -1,0 +1,78 @@
+#%%
+import numpy as np
+import os
+import pickle
+import argparse
+import dash
+from lpu3dnet.post_process.util import generate_compare_img
+from lpu3dnet.post_process.util import generate_compare_img_morecond
+from dash import html, dcc, Input, Output
+import plotly.graph_objects as go
+
+
+# %%
+def create_dash_app(data):
+    app = dash.Dash(__name__)
+
+    app.layout = html.Div([
+        dcc.Graph(id='plot'),
+        html.P("Slice Index:"),
+        dcc.Slider(
+            id='slice-index',
+            min=0,
+            max=data.shape[2] - 1,
+            value=5,
+            marks={0: '0', data.shape[2] - 1: str(data.shape[2] - 1)},
+            step=1
+        ),
+        html.P("Axis:"),
+        dcc.RadioItems(
+            id='axis',
+            options=[{'label': i, 'value': i} for i in ['x', 'y', 'z']],
+            value='z',
+            labelStyle={'display': 'inline-block'}
+        )
+    ])
+
+    @app.callback(
+        Output('plot', 'figure'),
+        [Input('slice-index', 'value'),
+         Input('axis', 'value')]
+    )
+    def update_figure(slice_index, axis):
+        indices = {'x': 0, 'y': 1, 'z': 2}
+        selected_axis = indices[axis]
+        if selected_axis == 0:
+            slice_data = data[slice_index, :, :]
+        elif selected_axis == 1:
+            slice_data = data[:, slice_index, :]
+        else:
+            slice_data = data[:, :, slice_index]
+
+        fig = go.Figure(data=go.Heatmap(
+            z=slice_data,
+            colorscale='gray'
+        ))
+        fig.update_layout(
+            title=f'Slice along {axis.upper()} at index {slice_index}',
+            autosize=False,
+            width=800,
+            height=800,
+            margin=dict(l=50, r=50, b=100, t=100),
+        )
+        return fig
+
+    return app
+
+# Run the app
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Load and display a 3D volume")
+    parser.add_argument("vol_dim", type=int, default=3, help="Dimension size of the volume")
+    parser.add_argument("ct_idx", type=int, default=1, nargs='?', help="Index of CT")
+    parser.add_argument("epoch_transformer", type=int, default=200, nargs='?', help="transformer epoch")
+    args = parser.parse_args()
+    # data = generate_compare_img(args.ct_idx, args.vol_dim, args.epoch_transformer)
+    data = generate_compare_img_morecond(args.ct_idx, args.vol_dim, args.epoch_transformer)
+    app = create_dash_app(data)
+    app.run_server(debug=True)
+# %%

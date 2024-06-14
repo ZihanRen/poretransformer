@@ -88,7 +88,7 @@ class Dataset_transformer(Dataset):
 
 
 if __name__ == "__main__":
-  experiment_idx = 11
+  experiment_idx = 12
 
   @hydra.main(
     config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
