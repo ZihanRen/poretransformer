@@ -73,6 +73,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # data = generate_compare_img(args.ct_idx, args.vol_dim, args.epoch_transformer)
     data = generate_compare_img_morecond(args.ct_idx, args.vol_dim, args.epoch_transformer)
+    data = data[:128, :128, :128]
     app = create_dash_app(data)
     app.run_server(debug=True)
 # %%
