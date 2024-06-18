@@ -11,6 +11,8 @@ import os
 import torch
 from lpu3dnet.post_process.util import *
 from lpu3dnet.inference import block_generation
+# from lpu3dnet.inference import block_generation_singlecond as block_generation
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

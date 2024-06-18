@@ -10,7 +10,10 @@ from hydra.experimental import compose, initialize
 import os
 import torch
 from lpu3dnet.post_process.util import *
-from lpu3dnet.inference import block_generation
+# from lpu3dnet.inference import block_generation
+from lpu3dnet.inference import block_generation_singlecond as block_generation
+
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -22,7 +25,7 @@ def tif_to_np(f_name):
     img = img.astype('float32')/255
     return img>0.5
 
-initialize(config_path=f"../../config/ex11")
+initialize(config_path=f"../../config/ex12")
 cfg_vqgan = compose(config_name="vqgan")
 cfg_transformer = compose(config_name="transformer")
 cfg_dataset = compose(config_name="dataset")
@@ -129,9 +132,9 @@ for epoch_transformer in [50,130,170,210,280]:
         generate_img_list.append(ct_generate)
         original_img_list.append(ct_real)
 
-    os.makedirs(f'ex11/epoch_{epoch_transformer}',exist_ok=True)
-    with open(f'ex11/epoch_{epoch_transformer}/img_gen_vol_{volume_dimension}.pkl', 'wb') as f:
+    os.makedirs(f'ex12/epoch_{epoch_transformer}',exist_ok=True)
+    with open(f'ex12/epoch_{epoch_transformer}/img_gen_vol_{volume_dimension}.pkl', 'wb') as f:
         pickle.dump(generate_img_list, f)
 
-    with open(f'ex11/epoch_{epoch_transformer}/img_real_vol_{volume_dimension}.pkl', 'wb') as f:
+    with open(f'ex12/epoch_{epoch_transformer}/img_real_vol_{volume_dimension}.pkl', 'wb') as f:
         pickle.dump(original_img_list, f)
