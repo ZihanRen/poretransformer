@@ -34,7 +34,7 @@ def simulation_phys(img):
     return data_pnm.data_tmp
 
 
-initialize(config_path=f"../config/ex11")
+initialize(config_path=f"../config/ex12")
 cfg_dataset = compose(config_name="dataset")
 
 
@@ -48,7 +48,7 @@ def load_data(ct_idx, vol_dim, root_dir):
 
 # gloabl variables
 volume_dim = 3
-root_dir = 'data_ref_hard'
+root_dir = 'db'
 ct_idx = 1
 img_data = load_data(ct_idx, volume_dim, root_dir)
 

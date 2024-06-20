@@ -35,11 +35,11 @@ def simulation_phys(img):
 
 # read pickle file fiven ct and vol_dim
 def load_data_gen(epoch_transformer, vol_dim):
-    file_path = f'ex11/epoch_{epoch_transformer}/img_gen_vol_{vol_dim}.pkl'
+    file_path = f'ex12/epoch_{epoch_transformer}/img_gen_vol_{vol_dim}.pkl'
     with open(file_path, 'rb') as file:
         img_fake = pickle.load(file)
 
-    file_path = f'ex11/epoch_{epoch_transformer}/img_real_vol_{vol_dim}.pkl'
+    file_path = f'ex12/epoch_{epoch_transformer}/img_real_vol_{vol_dim}.pkl'
     with open(file_path, 'rb') as file:
         img_real = pickle.load(file)
     
@@ -48,7 +48,7 @@ def load_data_gen(epoch_transformer, vol_dim):
 
 volume_dim = 3
 
-for epoch_transformer in [50,130,170,210,280]:
+for epoch_transformer in [60,70,80,90,110]:
 
     img_real, img_fake = load_data_gen(epoch_transformer, volume_dim)
 
@@ -67,5 +67,5 @@ for epoch_transformer in [50,130,170,210,280]:
             phys_results['fake'].append(simulation_phys(img_fake_sample))
 
 
-    with open(f'ex11/epoch_{epoch_transformer}/phys_result_{volume_dim}_128.pkl', 'wb') as file:
+    with open(f'ex12/epoch_{epoch_transformer}/phys_result_{volume_dim}_128.pkl', 'wb') as file:
         pickle.dump(phys_results, file)

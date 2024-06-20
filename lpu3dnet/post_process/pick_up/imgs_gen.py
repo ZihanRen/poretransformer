@@ -118,7 +118,7 @@ num_samples = 20
 
 
 
-for epoch_transformer in [50,130,170,210,280]:
+for epoch_transformer in [50,60,70,80,90,110]:
     generate_img_list = []
     original_img_list = []
 
