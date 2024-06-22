@@ -6,15 +6,29 @@ import porespy as ps
 from lpu3dnet.frame import vqgan
 import hydra
 import shutil
+from cpgan.ooppnm import pnm_sim_old
+
 
 from cpgan.ooppnm import img_process
 img_prc = img_process.Image_process()
 
+def get_kabs(img):
+    data_pnm = pnm_sim_old.Pnm_sim(im=img)
+    data_pnm.network_extract()
+    if data_pnm.error == 1:
+        print('Error in network extraction')
+        return None
+        # raise ValueError('Error in network extraction')
+        
+    data_pnm.init_physics()
+    data_pnm.get_absolute_perm()
+
+    return data_pnm.data_tmp['kabs']
 
 
 
 class ImageTokensGenerator:
-    def __init__(self, cfg_vqgan, cfg_transformer, cfg_dataset, device,vqgan_epoch):
+    def __init__(self, cfg_vqgan, cfg_dataset, device,vqgan_epoch):
         self.device = device
         self.root_PATH = cfg_dataset.PATH.sub_vol_large
         self.ct_idx = cfg_dataset.ct_idx
@@ -40,7 +54,7 @@ class ImageTokensGenerator:
     def gen_img_from_z(self,z):
         with torch.no_grad():
             img = self.vqgan.decode(z)
-            img = img_prc.clean_img(img)[0]
+            img = img_prc.clean_img(img)
         return img
     
     def empty_folders(self):
@@ -83,6 +97,7 @@ class ImageTokensGenerator:
         i_list = []
         j_list = []
         k_list = []
+        kabs_list = []
 
         for i in range(2):
             for j in range(2):
@@ -96,6 +111,17 @@ class ImageTokensGenerator:
                         img_gen = self.gen_img_from_z(z_current)
                         phi_list.append(ps.metrics.porosity(img_gen))
 
+                        try:
+                            kabs_tmp = get_kabs(img_gen[0])
+                            if kabs_tmp is None:
+                                return None, None, True
+                            kabs_list.append(kabs_tmp)
+                        except:
+                            print('Error in calculating kabs')
+                            ignore = True
+                            return None, None, True
+
+
                     tokens_patch_list.append(subset_tokens)
                     i_list.append(i)
                     j_list.append(j)
@@ -106,10 +132,11 @@ class ImageTokensGenerator:
         i_tensor = torch.tensor(i_list).view(-1,1).to(self.device)
         j_tensor = torch.tensor(j_list).view(-1,1).to(self.device)
         k_tensor = torch.tensor(k_list).view(-1,1).to(self.device)
+        kabs_tensor = torch.tensor(kabs_list).view(-1,1).to(self.device)
 
         # concatenate all the conditional information
-        cond = torch.cat([phi_tensor,i_tensor,j_tensor,k_tensor], dim=1)
-        return tokens_all, cond
+        cond = torch.cat([phi_tensor,kabs_tensor,i_tensor,j_tensor,k_tensor], dim=1)
+        return tokens_all, cond, False
 
     def generate_and_save_tokens_cond(self):
         for ct_idx in [0,1,2,3,4,5]:
@@ -127,7 +154,12 @@ class ImageTokensGenerator:
                 image = self.tif_to_np(img_path)
 
                 # Process your image here to generate `tokens_all` and `cond`
-                tokens_all, cond = self.get_patch_tokens_cond(image)
+                tokens_all, cond, ignore = self.get_patch_tokens_cond(image)
+                
+                # handle exception
+                if ignore:
+                    continue
+
                 tokens_all = tokens_all.cpu()
                 cond = cond.cpu()
                 # Save tokens and conditional vectors
@@ -143,12 +175,11 @@ if __name__ == "__main__":
     start_time = time.time()
     # Assuming cfg_vqgan and cfg_dataset are defined as in your script
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    experiment_idx = 6
+    experiment_idx = 13
     with hydra.initialize(config_path=f"../config/ex{experiment_idx}"):
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_dataset = hydra.compose(config_name="dataset")
-        cfg_transformer = hydra.compose(config_name="transformer")
-    generator = ImageTokensGenerator(cfg_vqgan, cfg_transformer,cfg_dataset, device,vqgan_epoch=25) # TODO should replace 25 with 10
+    generator = ImageTokensGenerator(cfg_vqgan,cfg_dataset, device,vqgan_epoch=25) # TODO should replace 25 with 10
     generator.empty_folders()
     generator.generate_and_save_tokens_cond()
     end_time = time.time()  # Record end time
