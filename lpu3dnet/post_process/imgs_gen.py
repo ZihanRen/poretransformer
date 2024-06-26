@@ -45,9 +45,16 @@ for i in range(6):
 # setting initial parameters
 volume_dimension = 3
 epoch_vqgan = 25
-epoch_transformer = 70
-num_samples = 4
-realization_num = 15
+epoch_transformer = 80
+
+
+
+# number of samples per ct
+num_samples = 8
+
+
+# transformer generated per sample
+realization_num = 30
 
 
 #%% random sampling
@@ -124,7 +131,7 @@ def generate_imgs_given_ctidx(ct_idx,num_samples=4,realization_num=4):
 
     # the naming should include sample number and volume dimension
     # generate compare data:
-    compare_data = generate_compare_list(img_list, ct_idx,num_samples_per_ct=3)
+    compare_data = generate_compare_list(img_list, ct_idx,num_samples_per_ct=4)
     results['compare'] = compare_data
     os.makedirs(f'db/sample_{ct_idx}',exist_ok=True)
     with open(f'db/sample_{ct_idx}/img_gen_vol_{volume_dimension}.pkl', 'wb') as f:
