@@ -43,7 +43,7 @@ for i in range(6):
 
 
 # setting initial parameters
-volume_dimension = 3
+volume_dimension = 4
 epoch_vqgan = 25
 epoch_transformer = 80
 

@@ -50,8 +50,8 @@ def load_data(ct_idx, vol_dim, root_dir):
 volume_dim = 3
 root_dir = 'db'
 
-
-for ct_idx in [0,2,3,4,5]:
+#%%
+for ct_idx in range(6):
 # ct_idx = 1
     img_data = load_data(ct_idx, volume_dim, root_dir)
 
@@ -59,7 +59,8 @@ for ct_idx in [0,2,3,4,5]:
     sim_results_per_ct['compare'] = []
     # simulating comparing samples
     for compare_samples in img_data['compare']:
-        compare_phys = simulation_phys(compare_samples[:128,:128,:128])
+        # compare_phys = simulation_phys(compare_samples)
+        compare_phys = simulation_phys(compare_samples)
         sim_results_per_ct['compare'].append(compare_phys)
 
 
@@ -70,15 +71,17 @@ for ct_idx in [0,2,3,4,5]:
             continue
         # simulate real
         sim_results_per_ct[sample_idx] = {}
-        real_phys = simulation_phys(img_data[sample_idx]['original'][:128,:128,:128])
+        # real_phys = simulation_phys(img_data[sample_idx]['original'][:128,:128,:128])
+        real_phys = simulation_phys(img_data[sample_idx]['original'])
         sim_results_per_ct[sample_idx]['original'] = real_phys
 
         # simulate generated
         sim_results_per_ct[sample_idx]['generate'] = []
         for gen_sample in img_data[sample_idx]['generate']:
-            gen_phys = simulation_phys(gen_sample[:128,:128,:128])
+            # gen_phys = simulation_phys(gen_sample[:128,:128,:128])
+            gen_phys = simulation_phys(gen_sample)
             sim_results_per_ct[sample_idx]['generate'].append(gen_phys)
 
 
-    with open(f'{root_dir}/sample_{ct_idx}/phys_results_{volume_dim}_128.pickle', 'wb') as file:
+    with open(f'{root_dir}/sample_{ct_idx}/phys_results_{volume_dim}.pickle', 'wb') as file:
         pickle.dump(sim_results_per_ct, file)
