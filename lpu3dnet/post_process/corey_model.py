@@ -157,15 +157,18 @@ kr_real = exp_fit.generate_kr_data()
 
 
 #%%
+
 num_samples = min(len(prediction), len(compare))
+
+
 f = plt.figure(figsize=(6, 4))
 for i in range(num_samples):
-    plt.plot(prediction[i]['sw'], prediction[i]['krw'], 'r-',linewidth=2,alpha=0.4)
-    plt.plot(compare[i]['sw'], compare[i]['krw'], 'y*',linewidth=1,alpha=0.4)
+    plt.plot(prediction[i]['sw'], prediction[i]['krnw'], 'r-',linewidth=2,alpha=0.4)
+    plt.plot(compare[i]['sw'], compare[i]['krnw'], 'y*',linewidth=1,alpha=0.4)
     plt.title('Exponential Fit to Relative Permeability')
     plt.xlabel('Water Saturation (Sw)')
-plt.plot(kr_real['sw'], kr_real['krw'], color='blue',linewidth=5, label='Actual Data')
-plt.plot(df_real['sw'], df_real['kr_water'], color='blue', label='Actual Data')
+plt.plot(kr_real['sw'], kr_real['krnw'], color='blue',linewidth=5, label='Actual Data')
+plt.plot(df_real['sw'], df_real['kr_air'], color='blue', label='Actual Data')
 plt.show()
 # f = plt.figure(figsize=(6, 4))
 # plt.plot(kr_avg_pred['sw'], kr_avg_pred['krw'], 'g-', label='prediction')
@@ -174,5 +177,17 @@ plt.show()
 # plt.xlabel('Water Saturation (Sw)')
 # plt.legend()
 # plt.show()
+
+# %% clean the outlier
+
+kr_middle_list = []
+for df in prediction:
+    kr_middle = df['krw'].iloc[50]
+    kr_middle_list.append(kr_middle)
+
+
+# set up boundary
+# filter out the prediction outside of the physical boundary
+
 
 # %%

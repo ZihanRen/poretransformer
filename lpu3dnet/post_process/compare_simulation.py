@@ -50,8 +50,10 @@ def load_data(ct_idx, vol_dim, root_dir):
 volume_dim = 3
 root_dir = 'db'
 
+
+
 #%%
-for ct_idx in range(6):
+for ct_idx in [0]:
 # ct_idx = 1
     img_data = load_data(ct_idx, volume_dim, root_dir)
 

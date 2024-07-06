@@ -50,6 +50,12 @@ class Exponential_fit:
             }
             )
         
+        # make sure all krw or krnw are between 0 and 1
+        krw_df.loc[krw_df['krw'] > 1, 'krw'] = 1
+        krw_df.loc[krw_df['krw'] < 0, 'krw'] = 0
+        krw_df.loc[krw_df['krnw'] > 1, 'krnw'] = 1
+        krw_df.loc[krw_df['krnw'] < 0, 'krnw'] = 0
+
         return krw_df
 
 
