@@ -61,7 +61,7 @@ class Corey_fit:
             p0=init_guess_kro,
             bounds=bounds_kro
             )
-        
+
         self.swirr = self.par_krw[1]
         self.sor = self.par_krnw[1]
 
@@ -86,7 +86,7 @@ class Corey_fit:
         krw_df.loc[krw_df['krnw'] > 1, 'krnw'] = 1
         krw_df.loc[krw_df['krnw'] < 0, 'krnw'] = 0
 
-        if self.swirr + self.sor >= 0.9:
+        if self.swirr + self.sor >= 0.8:
             # if the sum of swirr and sor is greater than 0.9, then the kr data is not good and too extreme
             return krw_df, [self.par_krw,self.par_krnw],False
         else:

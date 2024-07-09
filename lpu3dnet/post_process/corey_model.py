@@ -41,6 +41,22 @@ with open(f'{root_dir}/sample_{ct_idx}/phys_results_{vol_dim}.pickle', 'rb') as 
     sim_results = pickle.load(file)
 
 
+def truncated_kr(df,corey_fit):
+    swir = corey_fit.swirr
+    sorg = corey_fit.sor
+
+    # find largest krw and krnw
+    krw_max = df['krw'].max()
+    krnw_max = df['krnw'].max()
+    # truncated df based on the krw and krnw
+    df = df[ (df['krw']<krw_max) & (df['krnw']<krnw_max) ]
+    # truncated kr based on the swir and sorg
+    # make sure sw in the range of swir and 1-sorg
+    # df = df[(df['sw']>=swir) & (df['sw']<=1-sorg)]
+    return df
+
+
+
 #%%
 # generate predictions ensemble
 sample_idx = 6
@@ -57,10 +73,11 @@ for i in range(num_pred):
         df_pred = convert_dict_to_pd(sim_results[sample_idx]['generate'][i])
         corey_fit = Corey_fit(df_pred)
         kr_avg_pred,par,criteria = corey_fit.generate_kr_data()
+        
         if criteria:
-            prediction['data'].append(kr_avg_pred)
+            prediction['data'].append((truncated_kr(kr_avg_pred,corey_fit)))
             prediction['par'].append(par)
-    
+
 
 
 for i in range(num_compare):
@@ -68,7 +85,7 @@ for i in range(num_compare):
     corey_fit = Corey_fit(df_compare)
     kr_avg_compare,par,criteria = corey_fit.generate_kr_data()
     if criteria:
-        compare['data'].append(kr_avg_compare)
+        compare['data'].append(truncated_kr(kr_avg_compare,corey_fit))
         compare['par'].append(par)
 
 df_real = sim_results[sample_idx]['original']
@@ -76,13 +93,15 @@ df_real = sim_results[sample_idx]['original']
 df_real = convert_dict_to_pd(df_real)
 corey_fit = Corey_fit(df_real)
 kr_real,par_real,criteria = corey_fit.generate_kr_data()
+
+if criteria:
+    kr_real = truncated_kr(kr_real,corey_fit)
 print(criteria)
 
 
 #%%
 
 # you need to balance the number of samples
-
 prediction_data = prediction['data']
 compare_data = compare['data']
 num_samples = min(len(prediction_data), len(compare_data))
@@ -124,6 +143,7 @@ for i in range(num_samples):
     plt.xlabel('Water Saturation (Sw)')
 plt.plot(kr_real['sw'], kr_real['krnw'], color='blue',linewidth=5, label='Actual Data')
 plt.plot(df_real['sw'], df_real['kr_air'], color='blue', label='Actual Data')
+plt.grid('True')
 plt.show()
 
 
@@ -144,6 +164,7 @@ for i in range(num_samples):
     plt.xlabel('Water Saturation (Sw)')
 plt.plot(kr_real['sw'], kr_real['krw'], color='blue',linewidth=5, label='Actual Data')
 plt.plot(df_real['sw'], df_real['kr_water'], color='blue', label='Actual Data')
+plt.grid('True')
 plt.show()
 
 
