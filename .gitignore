@@ -12,3 +12,5 @@
 *.tif
 *.pickle
 *.pkl
+lpu3dnet/outputs
+lpu3dnet/temp
