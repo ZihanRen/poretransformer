@@ -45,16 +45,11 @@ for i in range(6):
 # setting initial parameters
 volume_dimension = 4
 epoch_vqgan = 25
-epoch_transformer = 80
-
-
-
+epoch_transformer = 50
 # number of samples per ct
 num_samples = 8
-
-
 # transformer generated per sample
-realization_num = 30
+realization_num = 10
 
 
 #%% random sampling
@@ -125,7 +120,7 @@ def generate_imgs_given_ctidx(ct_idx,num_samples=4,realization_num=4):
             volume_dimension=volume_dimension
             )
 
-            block_generator.generate_block()
+            block_generator.generate_block(repeat=4)
             volume,_ = assemble_volume(block_generator.ds_spatial)
             results[sample_idx]['generate'].append(volume)
 

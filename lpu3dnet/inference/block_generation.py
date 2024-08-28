@@ -14,6 +14,11 @@ from lpu3dnet.frame import transformer
 from cpgan.ooppnm import img_process
 img_prc = img_process.Image_process()
 
+def rejector(img):
+    phi = img_prc.phi(img)
+    if phi < 0.001 or phi > 0.8:
+        return True
+    return False
 
 class Block_generator_stochastic:
     def __init__(self,
@@ -233,16 +238,24 @@ class Block_generator_stochastic:
                                                                     top_k=top_k,
                                                                     features_num=self.total_features
                                                                     )
-                    token_list.append(token_nxt)
+                    # evaluate image quality first
+                    z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
+                    img_tmp = self.gen_img_from_z(z_current)
 
-                    # update spatial ds
+                    while rejector(img_tmp):
+                        # if image is rejected, resample current token
+                        token_nxt = self.generate_token(token_input,cond_input,top_k=top_k,temperature=temperature)
+                        z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
+                        img_tmp = self.gen_img_from_z(z_current)
+
+                    # write into data structure
+                    token_list.append(token_nxt)
                     self.ds_spatial[abs_ijk]['token'] = token_nxt
                     self.ds_spatial[abs_ijk]['cond'] = cond_vec
-                    z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
                     self.ds_spatial[abs_ijk]['z'] = z_current
-                    self.ds_spatial[abs_ijk]['img'] = self.gen_img_from_z(z_current)
+                    self.ds_spatial[abs_ijk]['img'] = img_tmp
                     self.ds_spatial[abs_ijk]['phi_gen'] = img_prc.phi(self.ds_spatial[abs_ijk]['img'])
-                    
+                                        
                     flat_idx += 1
     
     def generate_block(self,first_window=True,temperature=1,top_k=4,repeat=2):

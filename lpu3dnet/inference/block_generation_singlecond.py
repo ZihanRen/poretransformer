@@ -15,6 +15,14 @@ from cpgan.ooppnm import img_process
 img_prc = img_process.Image_process()
 
 
+def rejector(img):
+    phi = img_prc.phi(img)
+    if phi < 0.001 or phi > 0.8:
+        return True
+    return False
+
+
+
 class Block_generator_stochastic:
     def __init__(self,
                  cfg_dataset,
@@ -112,8 +120,8 @@ class Block_generator_stochastic:
                 for k in range(self.volume_dimension):
                     # store spatial info
                     self.ds_spatial[(i, j, k)] = {}
-                    # phi_gen = torch.rand(1) * (phi_large - phi_small) + phi_small
-                    phi_gen = torch.tensor(0.12)
+                    phi_gen = torch.rand(1) * (phi_large - phi_small) + phi_small
+                    # phi_gen = torch.tensor(0.12)
                     self.ds_spatial[(i, j, k)]['phi'] = phi_gen.item()
                     self.ds_spatial[(i, j, k)]['token'] = None
                     self.ds_spatial[(i, j, k)]['z'] = None
@@ -230,22 +238,24 @@ class Block_generator_stochastic:
                     # aggregate previous tokens
                     token_input = torch.cat(token_list[-self.patch_num:], dim=1)
                     token_nxt = self.generate_token(token_input,cond_input,top_k=top_k,temperature=temperature)
+                    
 
-                    # token_nxt = self.model_transformer.model.sample(
-                    #                                                 token_input,
-                    #                                                 cond_input,
-                    #                                                 temperature=temperature,
-                    #                                                 top_k=top_k,
-                    #                                                 features_num=self.total_features
-                    #                                                 )
+                    # evaluate image quality first
+                    z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
+                    img_tmp = self.gen_img_from_z(z_current)
+
+                    # while rejector(img_tmp):
+                    #     # if image is rejected, resample current token
+                    #     token_nxt = self.generate_token(token_input,cond_input,top_k=top_k,temperature=temperature)
+                    #     z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
+                    #     img_tmp = self.gen_img_from_z(z_current)
+
+                    # write into data structure
                     token_list.append(token_nxt)
-
-                    # update spatial ds
                     self.ds_spatial[abs_ijk]['token'] = token_nxt
                     self.ds_spatial[abs_ijk]['cond'] = cond_vec
-                    z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
                     self.ds_spatial[abs_ijk]['z'] = z_current
-                    self.ds_spatial[abs_ijk]['img'] = self.gen_img_from_z(z_current)
+                    self.ds_spatial[abs_ijk]['img'] = img_tmp
                     self.ds_spatial[abs_ijk]['phi_gen'] = img_prc.phi(self.ds_spatial[abs_ijk]['img'])
                     
                     flat_idx += 1
@@ -495,26 +505,28 @@ class Block_generator_compare:
                     # aggregate previous tokens
                     token_input = torch.cat(token_list[-self.patch_num:], dim=1)
                     token_nxt = self.generate_token(token_input,cond_input,top_k=top_k,temperature=temperature)
-                    # token_nxt = self.model_transformer.model.sample(
-                    #                                                 token_input,
-                    #                                                 cond_input,
-                    #                                                 temperature=temperature,
-                    #                                                 top_k=top_k,
-                    #                                                 features_num=self.total_features
-                    #                                                 )
-                    token_list.append(token_nxt)
 
-                    # update spatial ds
+
+                    z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
+                    img_tmp = self.gen_img_from_z(z_current)
+
+                    while rejector(img_tmp):
+                        # if image is rejected, resample current token
+                        token_nxt = self.generate_token(token_input,cond_input,top_k=top_k,temperature=temperature)
+                        z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
+                        img_tmp = self.gen_img_from_z(z_current)
+                        
+                    # write into data structure
+                    token_list.append(token_nxt)
                     self.ds_spatial[abs_ijk]['token'] = token_nxt
                     self.ds_spatial[abs_ijk]['cond'] = cond_vec
-                    z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
                     self.ds_spatial[abs_ijk]['z'] = z_current
-                    self.ds_spatial[abs_ijk]['img'] = self.gen_img_from_z(z_current)
+                    self.ds_spatial[abs_ijk]['img'] = img_tmp
                     self.ds_spatial[abs_ijk]['phi_gen'] = img_prc.phi(self.ds_spatial[abs_ijk]['img'])
                     
                     flat_idx += 1
     
-    def generate_block(self,first_window=True,temperature=1,top_k=4,repeat=2):
+    def generate_block(self,first_window=True,temperature=1,top_k=2,repeat=3):
         # temperature and top_k are not designed for dummy sampling
         # only for general transformer generation
         first_window = True
