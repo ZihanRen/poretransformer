@@ -112,7 +112,8 @@ class Block_generator_stochastic:
                 for k in range(self.volume_dimension):
                     # store spatial info
                     self.ds_spatial[(i, j, k)] = {}
-                    phi_gen = torch.rand(1) * (phi_large - phi_small) + phi_small
+                    # phi_gen = torch.rand(1) * (phi_large - phi_small) + phi_small
+                    phi_gen = torch.tensor(0.12)
                     self.ds_spatial[(i, j, k)]['phi'] = phi_gen.item()
                     self.ds_spatial[(i, j, k)]['token'] = None
                     self.ds_spatial[(i, j, k)]['z'] = None
