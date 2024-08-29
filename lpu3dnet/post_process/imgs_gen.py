@@ -10,9 +10,7 @@ from hydra.experimental import compose, initialize
 import os
 import torch
 from lpu3dnet.post_process.util import *
-# from lpu3dnet.inference import block_generation
-from lpu3dnet.inference import block_generation_singlecond as block_generation
-
+from lpu3dnet.inference import block_generation_singlecond
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -43,13 +41,13 @@ for i in range(6):
 
 
 # setting initial parameters
-volume_dimension = 4
+volume_dimension = 6
 epoch_vqgan = 25
 epoch_transformer = 50
 # number of samples per ct
-num_samples = 8
+num_samples = 5
 # transformer generated per sample
-realization_num = 10
+realization_num = 3
 
 
 #%% random sampling
@@ -100,6 +98,8 @@ def generate_imgs_given_ctidx(ct_idx,num_samples=4,realization_num=4):
     results = {}
 
     for sample_idx in range(len(samples_list)):
+        print(f'Processing sample {sample_idx} of CT {ct_idx}')
+        print('-------------------------------------------')
 
         img_sample = samples_list[sample_idx]
         results[sample_idx] = {}
@@ -109,7 +109,7 @@ def generate_imgs_given_ctidx(ct_idx,num_samples=4,realization_num=4):
         
         for _ in range(realization_num):
 
-            block_generator = block_generation.Block_generator_compare(
+            block_generator = block_generation_singlecond.Block_generator_compare(
             cfg_dataset,
             cfg_vqgan,
             cfg_transformer,
@@ -131,7 +131,6 @@ def generate_imgs_given_ctidx(ct_idx,num_samples=4,realization_num=4):
     os.makedirs(f'db/sample_{ct_idx}',exist_ok=True)
     with open(f'db/sample_{ct_idx}/img_gen_vol_{volume_dimension}.pkl', 'wb') as f:
         pickle.dump(results, f)
-
 
 
 for ct_idx in range(6):

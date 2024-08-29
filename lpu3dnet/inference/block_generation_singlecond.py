@@ -510,11 +510,11 @@ class Block_generator_compare:
                     z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
                     img_tmp = self.gen_img_from_z(z_current)
 
-                    while rejector(img_tmp):
-                        # if image is rejected, resample current token
-                        token_nxt = self.generate_token(token_input,cond_input,top_k=top_k,temperature=temperature)
-                        z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
-                        img_tmp = self.gen_img_from_z(z_current)
+                    # while rejector(img_tmp):
+                    #     # if image is rejected, resample current token
+                    #     token_nxt = self.generate_token(token_input,cond_input,top_k=top_k,temperature=temperature)
+                    #     z_current = self.model_vqgan.tokens_to_z(token_nxt,total_features_vec_num=self.total_features)
+                    #     img_tmp = self.gen_img_from_z(z_current)
                         
                     # write into data structure
                     token_list.append(token_nxt)

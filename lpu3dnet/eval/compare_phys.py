@@ -196,9 +196,13 @@ def load_data(ct_idx, vol_dim, root_dir):
 
 
 # gloabl variables
-volume_dim = 3
-root_dir = '../post_process/data_ref_hard'
+volume_dim = 4
+root_dir = '../post_process/db'
 img_crop_list_all = []
+
+
+crop_dim = 3
+
 
 for ct_idx in range(6):
 
@@ -206,9 +210,9 @@ for ct_idx in range(6):
 
     def crop_img(img_tmp):
         img_crop_list = []
-        for i in range(2):
-            for j in range(2):
-                for k in range(2):
+        for i in range(crop_dim):
+            for j in range(crop_dim):
+                for k in range(crop_dim):
                     img_crop = img_tmp[i*64:(i+1)*64,j*64:(j+1)*64,k*64:(k+1)*64]
                     img_crop_list.append(img_crop)
         return img_crop_list
