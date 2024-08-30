@@ -40,7 +40,7 @@ for i in range(6):
 
 
 # setting initial parameters
-volume_dimension = 3
+volume_dimension = 6
 epoch_vqgan = 25
 epoch_transformer = 50
 # number of samples per ct
@@ -133,7 +133,7 @@ def generate_imgs_given_ctidx(ct_idx,num_samples=4,realization_num=4):
         pickle.dump(results, f)
 
 
-for ct_idx in range(6):
+for ct_idx in [2,3,4,5]:
     generate_imgs_given_ctidx(
         ct_idx,
         num_samples=num_samples,

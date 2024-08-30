@@ -47,7 +47,7 @@ def load_data(ct_idx, vol_dim, root_dir):
 
 
 # gloabl variables
-volume_dim = 9
+volume_dim = 3
 root_dir = 'db'
 
 
