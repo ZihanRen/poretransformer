@@ -1,7 +1,6 @@
 #%% import numpy as np
 from tifffile import imread
 import os
-from hydra.experimental import compose, initialize
 import torch
 from tifffile import imread
 import numpy as np
@@ -41,13 +40,14 @@ for i in range(6):
 
 
 # setting initial parameters
-volume_dimension = 6
+volume_dimension = 3
 epoch_vqgan = 25
 epoch_transformer = 50
 # number of samples per ct
-num_samples = 5
+num_samples = 6
 # transformer generated per sample
-realization_num = 3
+realization_num = 15
+num_compare_per_ct = 6
 
 
 #%% random sampling
@@ -81,12 +81,12 @@ def sample_subvolumes(original_img, num_meta_volumes, num_samples):
     return subvolumes
 
 
-def generate_compare_list(img_list, ct_idx,num_samples_per_ct=4):
+def generate_compare_list(img_list,ct_idx,num_samples_per_ct=4):
     compare_list = []
     for i in range(6):
         if i == ct_idx:
             continue
-        current_list = sample_subvolumes(img_list[ct_idx], volume_dimension, num_samples_per_ct)
+        current_list = sample_subvolumes(img_list[i], volume_dimension, num_samples_per_ct)
         compare_list.extend(current_list)
     return compare_list
 
@@ -126,7 +126,7 @@ def generate_imgs_given_ctidx(ct_idx,num_samples=4,realization_num=4):
 
     # the naming should include sample number and volume dimension
     # generate compare data:
-    compare_data = generate_compare_list(img_list, ct_idx,num_samples_per_ct=4)
+    compare_data = generate_compare_list(img_list, ct_idx,num_samples_per_ct=num_compare_per_ct)
     results['compare'] = compare_data
     os.makedirs(f'db/sample_{ct_idx}',exist_ok=True)
     with open(f'db/sample_{ct_idx}/img_gen_vol_{volume_dimension}.pkl', 'wb') as f:

@@ -22,6 +22,14 @@ def rejector(img):
     return False
 
 
+def linear_transform_phi(phi_real):
+    phi_transform = 0.6936 * phi_real + 0.05
+    phi_transform = max(0.05, phi_transform)
+    phi_transform = min(0.5, phi_transform)
+
+    return phi_real
+
+
 
 class Block_generator_stochastic:
     def __init__(self,
@@ -113,7 +121,7 @@ class Block_generator_stochastic:
                     self.windows_idx.append(current_window)
 
     
-    def init_ds_spatial_info(self,phi_small=0.05,phi_large=0.35):
+    def init_ds_spatial_info(self,phi_small=0.12,phi_large=0.3):
         self.ds_spatial = {}
         for i in range(self.volume_dimension):
             for j in range(self.volume_dimension):
@@ -169,7 +177,7 @@ class Block_generator_stochastic:
 
 
         # set up constant cond info
-        phi = self.ds_spatial[(0,0,0)]['phi']
+        phi = linear_transform_phi(self.ds_spatial[(0,0,0)]['phi'])
         cond_vec = torch.tensor([phi, 0, 0, 0]).to(self.device)
         cond_vec = self.expand_cond_single(cond_vec)
         cond_list = []
@@ -226,7 +234,7 @@ class Block_generator_stochastic:
                     
 
                     
-                    phi = self.ds_spatial[abs_ijk]['phi']
+                    phi = linear_transform_phi(self.ds_spatial[abs_ijk]['phi'])
                     # generate conditional informatino
                     cond_vec = torch.tensor([phi, i, j, k]).to(self.device)
                     cond_vec = self.expand_cond_single(cond_vec)
