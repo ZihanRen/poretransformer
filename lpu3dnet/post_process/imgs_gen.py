@@ -133,7 +133,7 @@ def generate_imgs_given_ctidx(ct_idx,num_samples=4,realization_num=4):
         pickle.dump(results, f)
 
 
-for ct_idx in [2,3,4,5]:
+for ct_idx in [1]:
     generate_imgs_given_ctidx(
         ct_idx,
         num_samples=num_samples,

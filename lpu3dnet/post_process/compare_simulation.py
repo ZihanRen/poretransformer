@@ -47,13 +47,13 @@ def load_data(ct_idx, vol_dim, root_dir):
 
 
 # gloabl variables
-volume_dim = 3
+volume_dim = 6
 root_dir = 'db'
 
 
 
 #%%
-for ct_idx in [0,1,2,3,4,5]:
+for ct_idx in [1,2,3,4,5]:
     img_data = load_data(ct_idx, volume_dim, root_dir)
 
     sim_results_per_ct = {}
