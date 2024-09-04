@@ -48,7 +48,7 @@ def load_data_gen(epoch_transformer, vol_dim):
 
 volume_dim = 3
 
-for epoch_transformer in [60,70,80,90,110]:
+for epoch_transformer in [50]:
 
     img_real, img_fake = load_data_gen(epoch_transformer, volume_dim)
 
