@@ -123,15 +123,15 @@ class Block_generator_stochastic:
                     self.windows_idx.append(current_window)
 
     
-    def init_ds_spatial_info(self,phi_small=0.12,phi_large=0.3):
+    def init_ds_spatial_info(self,phi_small=0.11,phi_large=0.4):
         self.ds_spatial = {}
         for i in range(self.volume_dimension):
             for j in range(self.volume_dimension):
                 for k in range(self.volume_dimension):
                     # store spatial info
                     self.ds_spatial[(i, j, k)] = {}
-                    # phi_gen = torch.rand(1) * (phi_large - phi_small) + phi_small
-                    phi_gen = torch.tensor(self.constant_phi)
+                    phi_gen = torch.rand(1) * (phi_large - phi_small) + phi_small
+                    # phi_gen = torch.tensor(self.constant_phi)
                     self.ds_spatial[(i, j, k)]['phi'] = phi_gen.item()
                     self.ds_spatial[(i, j, k)]['token'] = None
                     self.ds_spatial[(i, j, k)]['z'] = None

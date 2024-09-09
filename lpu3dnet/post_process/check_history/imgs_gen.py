@@ -110,12 +110,9 @@ def generate_imgs_given_ctidx(ct_idx,epoch_transformer,num_samples):
 
 
 # setting initial parameters
-volume_dimension = 3
+volume_dimension = 6
 epoch_vqgan = 25
 num_samples = 20
-
-
-
 
 
 for epoch_transformer in [50,60,70,80,90,110]:

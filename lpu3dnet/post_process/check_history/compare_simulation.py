@@ -17,6 +17,8 @@ from hydra.experimental import compose, initialize
 import os
 import torch
 from cpgan.ooppnm import pnm_sim_old
+import porespy as ps
+
 
 def simulation_phys(img):
     data_pnm = pnm_sim_old.Pnm_sim(im=img)
@@ -32,6 +34,12 @@ def simulation_phys(img):
     data_pnm.kr_simulation()
     data_pnm.close_ws()
     return data_pnm.data_tmp
+
+
+def porosity_simulation(img):
+    phi = ps.metrics.porosity(img)
+    return phi
+
 
 # read pickle file fiven ct and vol_dim
 def load_data_gen(epoch_transformer, vol_dim):
@@ -60,12 +68,14 @@ for epoch_transformer in [50]:
     for ct_idx in range(6):
         for sample_idx in range(len(img_real[ct_idx])):
             img_real_sample = img_real[ct_idx][sample_idx]
-            img_real_sample = img_real_sample[:128, :128, :128]
+            img_real_sample = img_real_sample[:192, :192, :192]
             img_fake_sample = img_fake[ct_idx][sample_idx]
-            img_fake_sample = img_fake_sample[:128, :128, :128]
-            phys_results['real'].append(simulation_phys(img_real_sample))
-            phys_results['fake'].append(simulation_phys(img_fake_sample))
+            img_fake_sample = img_fake_sample[:192, :192, :192]
+            # phys_results['real'].append(simulation_phys(img_real_sample))
+            # phys_results['fake'].append(simulation_phys(img_fake_sample))
+            phys_results['real'].append(porosity_simulation(img_real_sample))
+            phys_results['fake'].append(porosity_simulation(img_fake_sample))
 
 
-    with open(f'ex12/epoch_{epoch_transformer}/phys_result_{volume_dim}_128.pkl', 'wb') as file:
+    with open(f'ex12/epoch_{epoch_transformer}/phys_result_{volume_dim}_192_porosity.pkl', 'wb') as file:
         pickle.dump(phys_results, file)
