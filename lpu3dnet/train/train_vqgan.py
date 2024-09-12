@@ -71,7 +71,6 @@ class TrainVQGAN:
         self.drop_last = cfg_vqgan.train.drop_last
         self.batch_size = cfg_vqgan.train.batch_size
         self.checkpoints_path = cfg_dataset.checkpoints.PATH
-        self.g_lambda = cfg_vqgan.train.g_lambda
         self.max_weight_q_loss = cfg_vqgan.train.max_weight_q_loss
         
         self.opt_vq = self.configure_optimizers()

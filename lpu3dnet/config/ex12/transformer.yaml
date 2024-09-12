@@ -20,15 +20,12 @@ architecture:
 # training parameters
 # TODO
 train:
-  p_keep: None #TODO
   sos_token: 3000 # idx should be larger than vocab_size (3000) - 1
   load_model: False
   pretrained_transformer_epoch: None
   pretrained_vqgan_epoch: None # identify which VQGAN to use for sampling
   batch_size: 32 #TODO
   epochs: 500
-  learning_rate: 0.0002 #TODO check - learning rate for vqgan
-  betas: [0.99,0.999] # learning rate for discriminator
-  weight_decay: 0.01 #TODO check
+  learning_rate: 0.0002 # transformer learning rate =
 
   
