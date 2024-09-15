@@ -68,7 +68,7 @@ def tensor_to_np(tensor):
     return tensor.detach().numpy()
 
 root_path = os.path.join(cfg_dataset.checkpoints.PATH, cfg_dataset.experiment)
-epoch = 10
+epoch = 15
 
 model_vqgan = vqgan.VQGAN(cfg_vqgan)
 PATH_model = os.path.join(root_path,f'vqgan_epoch_{epoch}.pth')
@@ -143,10 +143,10 @@ for i in range(len(real_img)):
     generate_phys_list.append(generate_phys)
 
 # save the results with pickle
-with open('db/real_phys.pkl','wb') as f:
+with open('db/real_phys_15.pkl','wb') as f:
     pickle.dump(real_phys_list,f)
 
-with open('db/generate_phys_10.pkl','wb') as f:
+with open('db/generate_phys_15.pkl','wb') as f:
     pickle.dump(generate_phys_list,f)
 
 
