@@ -180,7 +180,7 @@ class TrainTransformer:
 
 #%%
 if __name__ == "__main__":
-    with hydra.initialize(config_path="../config/ex12"):
+    with hydra.initialize(config_path="../config"):
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_transformer = hydra.compose(config_name="transformer")
         cfg_dataset = hydra.compose(config_name="dataset")

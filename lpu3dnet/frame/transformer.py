@@ -91,8 +91,13 @@ if __name__ == "__main__":
         cfg_transformer = hydra.compose(config_name="transformer")
         cfg_dataset = hydra.compose(config_name="dataset")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # print(OmegaConf.to_yaml(cfg))
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+    
     transformer_obj = Transformer(cfg_transformer).to(device)
     b = 10
     seq_len = int(27*8)
