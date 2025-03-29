@@ -144,11 +144,17 @@ class VQGAN(nn.Module):
 
 if __name__ == "__main__":
     experiment_idx = 6
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+    
     @hydra.main(
-    config_path=f"/journel/s0/zur74/LatentPoreUpscale3DNet/lpu3dnet/config/ex{experiment_idx}",
+    config_path=f"../config/ex{experiment_idx}",
     config_name="vqgan",
     version_base='1.2')
-
     def main(cfg):
         # print(OmegaConf.to_yaml(cfg))
         model = VQGAN(cfg)

@@ -1232,6 +1232,24 @@ files = [
 ]
 
 [[package]]
+name = "tifffile"
+version = "2022.8.3"
+description = "Read and write TIFF files"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "tifffile-2022.8.3-py3-none-any.whl", hash = "sha256:9ac1b07b2b920e1f3512f686adf514ef6b040a4a5e667beac771ae6a401eb913"},
+    {file = "tifffile-2022.8.3.tar.gz", hash = "sha256:27bf927b0432fa064bed2426f8bf1778250288a1fc3badb7f4e36ece2e9a6240"},
+]
+
+[package.dependencies]
+numpy = ">=1.19.2"
+
+[package.extras]
+all = ["imagecodecs (>=2022.2.22)", "lxml", "matplotlib (>=3.3)"]
+
+[[package]]
 name = "torch"
 version = "2.2.2"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
@@ -1457,4 +1475,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "7615cf04da634cb8f53ff8e02167ce3c534640c409d27bd3437590a9ec011fbe"
+content-hash = "ce8de0ac48b8ae04fc283ff4e3e51d9b1fa2bdf607a29a4ed5005f4e8c5f3c29"

@@ -1,5 +1,5 @@
-Project: config_transformer
-experiment: ex12
+# Project: config_transformer
+# experiment: ex12
 
 
 architecture:
@@ -26,6 +26,8 @@ train:
   pretrained_vqgan_epoch: None # identify which VQGAN to use for sampling
   batch_size: 32 #TODO
   epochs: 500
-  learning_rate: 0.0002 # transformer learning rate =
+  learning_rate: 0.0002 # transformer learning rate
+  weight_decay: 0.01 # weight decay for AdamW optimizer
+  betas: [0.9, 0.95] # betas for AdamW optimizer
 
   

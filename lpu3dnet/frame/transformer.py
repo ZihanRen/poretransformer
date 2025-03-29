@@ -82,14 +82,14 @@ class Transformer(nn.Module):
     def save_checkpoint(self,path):
         torch.save(self.state_dict(), path)
     
+    # generate method removed as it's redundant - inference uses model.sample directly
 
 # test the module
 if __name__ == "__main__":
     
-    with hydra.initialize(config_path="../config/ex7"):
+    with hydra.initialize(config_path="../config"):
         cfg_vqgan = hydra.compose(config_name="vqgan")
         cfg_transformer = hydra.compose(config_name="transformer")
-        cfg_dataset = hydra.compose(config_name="dataset")
 
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -100,30 +100,37 @@ if __name__ == "__main__":
     
     transformer_obj = Transformer(cfg_transformer).to(device)
     b = 10
-    seq_len = int(27*8)
-    cond_dim = 4
+    seq_len = int(64*8)
+    cond_dim = 1
     patch_num = 8
-    features_num = 27
+    features_num = 64
 
     idx = torch.randint(0, 3000, (10, seq_len)).to(device)
-    cond_info = torch.rand(b,patch_num*features_num,cond_dim).to(device).float()
+    cond_info = torch.rand(b, patch_num*features_num, cond_dim).to(device).float()
     opt = transformer_obj.configure_optimizers(device)
-    logits = transformer_obj(idx,cond_info)
+    logits = transformer_obj(idx, cond_info)
 
     loss_all = transformer_obj.loss_func_all(logits, idx)
     loss_last = transformer_obj.loss_func_last(logits, idx)
 
 
-    # # generation phase
-    # cond_info = torch.rand(b,patch_num,cond_dim).to(device).float()
-    # idx = torch.randint(0, 3000, (10, 18)).to(device)
-    # new_tokens = transformer_obj.generate(
-    #     idx,
-    #     cond_info,
-    #     max_new_tokens=30,
-    #     temperature=1.0,
-    #     top_k=None
-    #     )
+    # testing sampling directly using the model.sample method
+    sos_token = cfg_transformer.train.sos_token
+    sos_tokens = torch.ones(1, features_num) * sos_token
+    sos_tokens = sos_tokens.long().to(device)
+    
+    # sample a single token
+    cond_test = torch.rand(1, features_num, cond_dim).to(device).float()
+    with torch.no_grad():
+        token_next = transformer_obj.model.sample(
+            sos_tokens,
+            cond_test,
+            temperature=1.0,
+            top_k=4,
+            features_num=features_num
+        )
+    
+    print(f"Generated token shape: {token_next.shape}")
 
 
 

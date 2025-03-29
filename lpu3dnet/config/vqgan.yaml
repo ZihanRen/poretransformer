@@ -1,6 +1,5 @@
-Project: config_vqgan
-
-experiment: ex12
+# Project: config_vqgan
+# experiment: ex6
 
 usecodebook_ema: false  # Set to true to use Codebook_EMA
 pretrained: false
