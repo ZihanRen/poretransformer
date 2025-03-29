@@ -36,11 +36,28 @@ Our model generates 3D porous media that match spatial distribution of rock prop
 
 ## Usage
 
-### Environment Setup
+### Getting Started
 
-Please refer to the dependency files in the repository:
-- `req-dl.txt`: Deep learning dependencies
-- `req-pnm.txt` / `req-pnm-new.txt`: Porous media simulation dependencies
+First, navigate to the main project directory:
+```bash
+cd lpu3dnet
+```
+
+### Installation
+
+There are two recommended ways to install the package:
+
+#### Using pip (Development Mode)
+```bash
+pip install -e .
+```
+
+#### Using Poetry
+```bash
+poetry install
+```
+
+> **Note**: The `req-dl.txt`, `req-pnm.txt`, and `req-pnm-new.txt` files are provided for reference only and are not intended for direct installation by developers.
 
 ### Training
 
@@ -49,7 +66,7 @@ Train the VQVAE model:
 python main.py
 ```
 
-Train the transformer model (uncomment the relevant line in main.py):
+Firstly train VQVAE and then train the transformer model (uncomment the relevant line in main.py):
 ```python
 # Modify main.py to call train_transformer() instead of train_vqgan()
 python main.py
