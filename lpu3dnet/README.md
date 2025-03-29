@@ -12,25 +12,43 @@ Our approach combines:
 1. A Vector Quantized Variational Autoencoder (VQVAE) to compress and quantize sub-volume training images into low-dimensional tokens
 2. A transformer model to spatially assemble these tokens into larger images following a specific spatial order
 
+## Model Architecture
+
+### VQVAE Component
+
 ![VQVAE Workflow](./figures/VQGAN_workflow.png)
 
 **VQVAE workflow:** Compressing and quantizing 3D porous media images into discrete tokens using a vector quantized autoencoder architecture.
+
+<br>
+
+### Transformer Component
 
 ![Transformer Workflow](./figures/transformer_workflow.jpg)
 
 **Transformer workflow:** Spatially assembling the quantized tokens into larger coherent structures following specific spatial ordering and relationships.
 
+<br>
+
 ## Results
 
 Our model generates 3D porous media that match spatial distribution of rock properties and accurately model transport properties including permeability and multiphase flow relative permeability.
+
+### Synthetic Porous Media Generation
 
 ![Synthetic 3D Results](./figures/synthetic_3d_sections.png)
 
 **Synthetic 3D results:** Generated porous media structures conditioned on porosity values, showing realistic heterogeneity and structural characteristics.
 
+<br>
+
+### Application in Reservoir Modeling
+
 ![General Workflow in Reservoir](./figures/general_workflow_in_reservoir.png)
 
 **General workflow in reservoir modeling:** Application of our framework for upscaling flow functions from pore-scale to field-scale simulations.
+
+<br>
 
 ## Repository Structure
 
