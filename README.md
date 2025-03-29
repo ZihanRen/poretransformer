@@ -12,15 +12,43 @@ Our approach combines:
 1. A Vector Quantized Variational Autoencoder (VQVAE) to compress and quantize sub-volume training images into low-dimensional tokens
 2. A transformer model to spatially assemble these tokens into larger images following a specific spatial order
 
-![VQVAE Workflow](figures/VQGAN_workflow.png)
-![Transformer Workflow](figures/transformer_workflow.jpg)
+## Model Architecture
+
+### VQVAE Component
+
+![VQVAE Workflow](./figures/VQGAN_workflow.png)
+
+**VQVAE workflow:** Compressing and quantizing 3D porous media images into discrete tokens using a vector quantized autoencoder architecture.
+
+<br>
+
+### Transformer Component
+
+![Transformer Workflow](./figures/transformer_workflow.jpg)
+
+**Transformer workflow:** Spatially assembling the quantized tokens into larger coherent structures following specific spatial ordering and relationships.
+
+<br>
 
 ## Results
 
 Our model generates 3D porous media that match spatial distribution of rock properties and accurately model transport properties including permeability and multiphase flow relative permeability.
 
-![Synthetic 3D Results](figures/synthetic_3d_sections.png)
-![General Workflow in Reservoir](figures/general_workflow_in_reservoir.png)
+### Synthetic Porous Media Generation
+
+![Synthetic 3D Results](./figures/synthetic_3d_sections.png)
+
+**Synthetic 3D results:** Generated porous media structures conditioned on porosity values, showing realistic heterogeneity and structural characteristics.
+
+<br>
+
+### Application in Reservoir Modeling
+
+![General Workflow in Reservoir](./figures/general_workflow_in_reservoir.png)
+
+**General workflow in reservoir modeling:** Application of our framework for upscaling flow functions from pore-scale to field-scale simulations.
+
+<br>
 
 ## Repository Structure
 
@@ -36,11 +64,28 @@ Our model generates 3D porous media that match spatial distribution of rock prop
 
 ## Usage
 
-### Environment Setup
+### Getting Started
 
-Please refer to the dependency files in the repository:
-- `req-dl.txt`: Deep learning dependencies
-- `req-pnm.txt` / `req-pnm-new.txt`: Porous media simulation dependencies
+First, navigate to the main project directory:
+```bash
+cd lpu3dnet
+```
+
+### Installation
+
+There are two recommended ways to install the package:
+
+#### Using pip (Development Mode)
+```bash
+pip install -e .
+```
+
+#### Using Poetry
+```bash
+poetry install
+```
+
+> **Note**: The `req-dl.txt`, `req-pnm.txt`, and `req-pnm-new.txt` files are provided for reference only and are not intended for direct installation by developers.
 
 ### Training
 
@@ -49,7 +94,7 @@ Train the VQVAE model:
 python main.py
 ```
 
-Train the transformer model (uncomment the relevant line in main.py):
+Firstly train VQVAE and then train the transformer model (uncomment the relevant line in main.py):
 ```python
 # Modify main.py to call train_transformer() instead of train_vqgan()
 python main.py
