@@ -104,7 +104,7 @@ python main.py
 
 1. **Post-Processing**: The `post_process` folder contains notebooks and scripts for analysis but is still under refinement. The packages and dependencies are highly specialized and require specific installation instructions. Feel free to review the notebook contents, but running them directly is not recommended at this time.
 
-2. **Configuration**: The `config` folder contains hyperparameter settings for the neural networks. Complete hyperparameter details will be fully open-sourced once the manuscript is published in an accepted journal.
+2. **Configuration**: The `config` folder contains hyperparameter settings for the neural networks. Complete hyperparameter details will be fully open-sourced once the manuscript is accepted.
 
 ## Citation
 
