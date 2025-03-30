@@ -18,7 +18,7 @@ Our approach combines:
 
 ![VQVAE Workflow](./figures/VQGAN_workflow.png)
 
-**VQVAE workflow:** Compressing and quantizing 3D porous media images into discrete tokens using a vector quantized autoencoder architecture.
+**VQVAE workflow:** Compressing and quantizing 3D porous media images into discrete tokens using a vector quantized autoencoder architecture. The VQVAE model has approximately 200M parameters.
 
 <br>
 
@@ -26,7 +26,7 @@ Our approach combines:
 
 ![Transformer Workflow](./figures/transformer_workflow.jpg)
 
-**Transformer workflow:** Spatially assembling the quantized tokens into larger coherent structures following specific spatial ordering and relationships.
+**Transformer workflow:** Spatially assembling the quantized tokens into larger coherent structures following specific spatial ordering and relationships. The transformer model has approximately 180M parameters.
 
 <br>
 
